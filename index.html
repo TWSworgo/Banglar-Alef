@@ -14,38 +14,38 @@
  <section id="hud">
   <header class="topbar">
    <div class="brand">বাংলার <b>আলেফ</b><small>ঢাকা ড্রাইভ · ARCADE</small></div>
-   <div class="scorebox"><small>জাতীয় ক্ষতি</small><strong id="loss">৳০</strong><span id="combo" class="hidden">×২ কম্বো</span></div>
+   <div class="scorebox"><small>নিরাপদ যাত্রার স্কোর</small><strong id="score">৳০</strong><span id="combo" class="hidden">পরপর সফল যাত্রা ×২</span></div>
    <div class="meters"><div><small>চার্জ</small><b id="battery">১০০%</b><i><em id="batteryBar"></em></i></div><div><small>সেরা</small><b id="best">৳০</b></div></div>
    <button id="pause" aria-label="Pause">Ⅱ</button>
   </header>
   <div class="left-stack">
-   <div id="wanted">জনতার রাগ <b id="anger">০%</b><i><em id="angerBar"></em></i></div>
-   <div id="hint">ঢাকার রাস্তায় চালান। ধাক্কায় বাড়বে জাতীয় ক্ষতি!</div>
+   <div id="missionPanel"><small>চলতি কাজ</small><b id="mission">যাত্রী খুঁজুন</b><span id="missionSub">সবুজ চিহ্নের কাছে ধীরে থামুন</span></div>
+   <div id="hint">ট্রাফিক মেনে চালান। যাত্রীকে নিরাপদে গন্তব্যে পৌঁছে দিন।</div>
   </div>
   <div class="right-stack"><div id="mapWrap"><canvas id="map" width="180" height="180"></canvas><small>ঢাকা · লাইভ ম্যাপ</small></div><div id="clock">০৮:৩০</div></div>
-  <div id="toast" aria-live="polite"></div><div id="behind" class="hidden">সতর্কতা: জনতা পেছনে!</div>
+  <div id="toast" aria-live="polite"></div>
  </section>
  <section id="overlay" class="screen"><div class="menu">
   <div class="eyebrow">ঢাকার রাস্তায় এক অদ্ভুত যাত্রা</div><h1>বাংলার <b>আলেফ</b></h1>
-  <p>ব্যাটারিচালিত অটো নিয়ে শহরে বেরিয়ে পড়ুন। ট্রাফিক, পথচারী আর ক্ষুব্ধ জনতার দিকে খেয়াল রাখুন। প্রতিটি ধাক্কায় বাড়বে জাতীয় ক্ষতি—কিন্তু চার্জ ফুরিয়ে গেলে বিপদ!</p>
+  <p>ব্যাটারিচালিত অটো নিয়ে ঢাকার ব্যস্ত রাস্তায় যাত্রী পরিবহন করুন। ট্রাফিক সিগন্যাল মানুন, পথচারীদের নিরাপত্তা দিন, চার্জ সামলান এবং যাত্রীকে নিরাপদে গন্তব্যে পৌঁছে স্কোর অর্জন করুন।</p>
   <button id="start">চালানো শুরু করুন</button>
-  <div class="menu-note">কম্পিউটার: WASD / Arrow · H হর্ন · B হইচই · C ক্যামেরা · P বিরতি<br>মোবাইল: স্ক্রিনের কন্ট্রোল ব্যবহার করুন</div>
+  <div class="menu-note">কম্পিউটার: WASD / Arrow · H হর্ন · C ক্যামেরা · P বিরতি<br>মোবাইল: স্ক্রিনের কন্ট্রোল ব্যবহার করুন</div>
  </div></section>
  <section id="pausePanel" class="screen hidden"><div class="panel"><h2>খেলা বিরতি</h2>
   <div class="settings-row"><label for="quality">গ্রাফিক্সের মান</label><select id="quality"><option value="high">High · ছায়াসহ</option><option value="medium">Medium</option><option value="low">Low · দ্রুত</option></select></div>
-  <button id="soundToggle" class="secondary">শব্দ: চালু</button><p class="help-copy">চালান: W / ↑ · ব্রেক: S / ↓ · স্টিয়ার: A D / ← →<br>টান: Shift · লাফ: Space · হর্ন: H · শব্দবোমা: B · ক্যামেরা: C</p>
+  <button id="soundToggle" class="secondary">শব্দ: চালু</button><p class="help-copy">চালান: W / ↑ · ব্রেক: S / ↓ · স্টিয়ার: A D / ← →<br>হর্ন: H · ক্যামেরা: C · বিরতি: P</p>
   <button id="resume">চালিয়ে যান</button><button id="restart">নতুন করে শুরু</button></div></section>
- <section id="endPanel" class="screen hidden"><div class="panel"><div class="eyebrow">RUN OVER</div><h2 id="endTitle">জনতা ধরে ফেলেছে!</h2><p id="endText">আপনার যাত্রা শেষ।</p>
-  <div class="final-scores"><div><small>জাতীয় ক্ষতি</small><b id="finalLoss">৳০</b></div><div><small>সেরা স্কোর</small><b id="finalBest">৳০</b></div><div><small>ধাক্কা</small><b id="finalCrashes">০</b></div></div>
+ <section id="endPanel" class="screen hidden"><div class="panel"><div class="eyebrow">RUN OVER</div><h2 id="endTitle">যাত্রা শেষ</h2><p id="endText">আপনার যাত্রা শেষ।</p>
+  <div class="final-scores"><div><small>যাত্রার স্কোর</small><b id="finalLoss">৳০</b></div><div><small>সেরা স্কোর</small><b id="finalBest">৳০</b></div><div><small>দুর্ঘটনা</small><b id="finalCrashes">০</b></div></div>
   <button id="again">আবার খেলুন</button>
  </div></section>
  <div class="controls">
   <div class="left-controls"><div class="steer"><button data-control="left">◀</button><button data-control="right">▶</button></div>
-   <div class="utility"><button id="horn">হর্ন</button><button id="shout">হইচই</button><button id="jump">লাফ</button><button id="camera">ক্যামেরা</button></div>
+   <div class="utility"><button id="horn">হর্ন</button><button id="camera">ক্যামেরা</button></div>
   </div>
-  <div class="right-controls"><button data-control="brake" class="brake">ব্রেক</button><button data-control="boost" class="boost">টান</button><button data-control="throttle" class="gas">চালান</button></div>
+  <div class="right-controls"><button data-control="brake" class="brake">ব্রেক</button><button data-control="throttle" class="gas">চালান</button></div>
  </div>
- <div class="desktop-hint">WASD / ↑↓←→ চালান · H হর্ন · X শব্দবোমা · C ক্যামেরা · P বিরতি</div>
+ <div class="desktop-hint">WASD / ↑↓←→ চালান · H হর্ন · C ক্যামেরা · P বিরতি</div>
 </main>
 <script type="module" src="./game.js"></script>
 </body></html>
