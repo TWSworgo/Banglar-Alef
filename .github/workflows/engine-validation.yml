@@ -59,7 +59,9 @@ jobs:
         with:
           node-version: "22"
       - name: Validate JavaScript module syntax
-        run: node --check engine.js
+        run: |
+          node --check engine.js
+          node --check game.js
       - name: Validate engine systems module syntax
         run: node --check engine-systems.js
       - name: Validate asset pipeline module syntax
@@ -122,3 +124,5 @@ jobs:
         run: node .github/scripts/engine-browser-test.mjs
       - name: Run OSM-to-3D city mobile acceptance test
         run: node .github/scripts/city-browser-test.mjs
+      - name: Run first playable game acceptance test
+        run: node .github/scripts/game-browser-test.mjs
