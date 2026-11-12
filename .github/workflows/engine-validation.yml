@@ -9,6 +9,8 @@ on:
       - "engine-assets.js"
       - "engine-showcase.js"
       - "game.js"
+      - "game-core.js"
+      - ".github/scripts/game-core.test.mjs"
       - "game.html"
       - "game.css"
       - ".github/scripts/game-browser-test.mjs"
@@ -62,6 +64,7 @@ jobs:
         run: |
           node --check engine.js
           node --check game.js
+          node --check game-core.js
       - name: Validate engine systems module syntax
         run: node --check engine-systems.js
       - name: Validate asset pipeline module syntax
@@ -76,7 +79,7 @@ jobs:
           node --check city-lab.js
           node --check .github/scripts/city-browser-test.mjs
       - name: Run engine and city data unit tests
-        run: node --test .github/scripts/engine-systems.test.mjs .github/scripts/engine-assets.test.mjs .github/scripts/city-world.test.mjs
+        run: node --test .github/scripts/engine-systems.test.mjs .github/scripts/engine-assets.test.mjs .github/scripts/city-world.test.mjs .github/scripts/game-core.test.mjs
       - name: Validate engine page contract
         run: |
           node --input-type=module <<'NODE'
