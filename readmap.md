@@ -110,6 +110,16 @@
 
 এখানে গুরুত্বপূর্ণ বিষয়: OpenStreetMap থেকে রাস্তার তথ্য পাওয়া গেলেও সেটি নিজে থেকে সম্পূর্ণ বাস্তবসম্মত 3D ঢাকা তৈরি করবে না। ভবন, রাস্তার পৃষ্ঠ, দোকান, ফুটপাত ও অন্যান্য পরিবেশের 3D নির্মাণও সম্পন্ন করতে হবে।
 
+### Feature 03 implementation record — 2026-11-12
+
+- Added `city-world.js`: bounded Overpass query builder, two-mirror OSM fetch with fallback, WGS84 latitude/longitude to local metre projection, OSM highway width interpretation, road-way parsing and building-footprint parsing.
+- Added `buildCityWorld()`: one batched road-surface geometry plus height-based OSM building footprint extrusions and a ground plane. Building height uses OSM `height` or `building:levels`; missing values use an explicitly approximate 7.5 m placeholder.
+- Added `city.html`, `city.css`, and `city-lab.js`: separate interactive 3D City Data Lab, Uttara pilot bounding box (23.865–23.880 N, 90.375–90.395 E), OrbitControls, live Overpass loading, status/error reporting and geometry counters.
+- Added navigation from the main menu to the Dhaka Open World lab.
+- Added Node unit tests for Overpass query bounds, coordinate projection, road-width rules, road/building parsing and malformed data; added Playwright mobile-viewport fixture acceptance test.
+- **Scope boundary:** this is the first bounded OSM import/conversion slice, not the complete Uttara map or Feature 03. Live Overpass availability/CORS and the resulting real OSM dataset still require browser verification. Road junction stitching, sidewalks/crossings, building facade assets, landmarks, tiled streaming/cache, seamless multi-area travel and the remaining listed city features are not yet implemented. OSM building heights without tags remain approximations.
+- OpenStreetMap data attribution is displayed in the City Lab; OSM data is available under ODbL 1.0.
+
 ## ৪. CNG Vehicle System
 
 - [ ] প্রধান Player Vehicle: Battery-powered CNG।
