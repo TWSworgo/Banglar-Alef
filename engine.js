@@ -1,4 +1,4 @@
-let THREE, OrbitControls;
+let THREE, OrbitControls, RoomEnvironment, clock;
 
 const $ = id => document.getElementById(id);
 const viewport = $("viewport");
@@ -9,7 +9,7 @@ let renderer, scene, camera, controls, resizeObserver, animationFrame;
 let lastFrame = performance.now(), fpsFrames = 0, fpsStart = lastFrame;
 let adaptiveScale = 1, qualityTier = "AUTO";
 let disposed = false;
-const clock = new THREE.Clock();
+
 const lodObjects = [];
 
 function webglAvailable() {
@@ -370,9 +370,12 @@ async function start() {
     errorPanel.hidden = true;
     disposed = false;
     const threeModule = await import("https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js");
-    const controlsModule = await import("https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js");
+    const controlsModule = await import("three/addons/controls/OrbitControls.js");
+    const environmentModule = await import("three/addons/environments/RoomEnvironment.js");
     THREE = threeModule;
     OrbitControls = controlsModule.OrbitControls;
+    RoomEnvironment = environmentModule.RoomEnvironment;
+    clock = new THREE.Clock();
     configureRenderer();
     animationFrame = requestAnimationFrame(animate);
   } catch (error) {
