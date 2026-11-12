@@ -64,7 +64,8 @@
 - WebGL failure handling, retry এবং scene resource cleanup যুক্ত।
 - Asphalt-এর procedural tangent-space normal map যোগ করা হয়েছে; এটি color ও roughness map-এর সঙ্গে PBR material-এ ব্যবহৃত হচ্ছে।
 - Playwright-ভিত্তিক headless browser acceptance test যোগ করা হয়েছে: desktop ও mobile viewport-এ WebGL 2 startup, canvas visibility, FPS/draw-call/triangle telemetry, lighting/weather controls এবং camera reset পরীক্ষা করে।
-- GitHub Actions workflow-এ source validation ও browser acceptance আলাদা job; screenshot artifact সংরক্ষণের ধাপও যুক্ত। নতুন browser acceptance run-এর চূড়ান্ত ফল এখনো pending।
+- GitHub Actions workflow-এ source validation ও browser acceptance আলাদা job। 2026-11-12-এর run `43211640032`-এ দুই job-ই সফল: JavaScript/HTML contract এবং Chromium headless-এ desktop ও mobile viewport WebGL startup, controls ও telemetry checks।
+- Headless CI-এর SwiftShader ফল বাস্তব Android/Desktop GPU benchmark নয়; তাই FPS/thermal/memory performance-এর device acceptance এখনো বাকি।
 
 **এখনো অসম্পূর্ণ:** production-grade real-world asset pipeline ও high-resolution authored textures, সম্পূর্ণ occlusion culling, game-wide collision integration, low-memory GPU profiling এবং Android/Desktop browser acceptance testing। তাই এই Feature 02 এখনো 100% Complete নয়।
 
