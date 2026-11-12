@@ -12,6 +12,12 @@ on:
       - ".github/scripts/engine-assets.test.mjs"
       - "engine.html"
       - "engine.css"
+      - "city.html"
+      - "city.css"
+      - "city-world.js"
+      - "city-lab.js"
+      - ".github/scripts/city-world.test.mjs"
+      - ".github/scripts/city-browser-test.mjs"
       - ".github/scripts/engine-browser-test.mjs"
       - ".github/workflows/engine-validation.yml"
   pull_request:
@@ -25,6 +31,12 @@ on:
       - ".github/scripts/engine-assets.test.mjs"
       - "engine.html"
       - "engine.css"
+      - "city.html"
+      - "city.css"
+      - "city-world.js"
+      - "city-lab.js"
+      - ".github/scripts/city-world.test.mjs"
+      - ".github/scripts/city-browser-test.mjs"
       - ".github/scripts/engine-browser-test.mjs"
       - ".github/workflows/engine-validation.yml"
 
@@ -48,8 +60,13 @@ jobs:
         run: node --check engine-showcase.js
       - name: Validate browser test syntax
         run: node --check .github/scripts/engine-browser-test.mjs
-      - name: Run engine systems unit tests
-        run: node --test .github/scripts/engine-systems.test.mjs .github/scripts/engine-assets.test.mjs
+      - name: Validate city modules and browser test syntax
+        run: |
+          node --check city-world.js
+          node --check city-lab.js
+          node --check .github/scripts/city-browser-test.mjs
+      - name: Run engine and city data unit tests
+        run: node --test .github/scripts/engine-systems.test.mjs .github/scripts/engine-assets.test.mjs .github/scripts/city-world.test.mjs
       - name: Validate engine page contract
         run: |
           node --input-type=module <<'NODE'
@@ -95,3 +112,5 @@ jobs:
           exit 1
       - name: Run desktop and mobile-viewport WebGL acceptance tests
         run: node .github/scripts/engine-browser-test.mjs
+      - name: Run OSM-to-3D city mobile acceptance test
+        run: node .github/scripts/city-browser-test.mjs
