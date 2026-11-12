@@ -2,12 +2,7 @@ import * as THREE from "three";
 
 const $=id=>document.getElementById(id);
 const canvas=$("view"), mapCanvas=$("map"), map=mapCanvas.getContext("2d");
-const ui={
- overlay:$("overlay"),start:$("start"),pause:$("pause"),pausePanel:$("pausePanel"),resume:$("resume"),restart:$("restart"),
- endPanel:$("endPanel"),again:$("again"),endTitle:$("endTitle"),endText:$("endText"),finalLoss:$("finalLoss"),finalBest:$("finalBest"),finalCrashes:$("finalCrashes"),
- loss:$("loss"),combo:$("combo"),battery:$("battery"),batteryBar:$("batteryBar"),best:$("best"),anger:$("anger"),angerBar:$("angerBar"),
- hint:$("hint"),clock:$("clock"),toast:$("toast"),behind:$("behind"),horn:$("horn"),shout:$("shout"),jump:$("jump"),camera:$("camera"),quality:$("quality"),soundToggle:$("soundToggle")
-};
+const ui={overlay:$("overlay"),start:$("start"),pause:$("pause"),pausePanel:$("pausePanel"),resume:$("resume"),restart:$("restart"),endPanel:$("endPanel"),again:$("again"),endTitle:$("endTitle"),endText:$("endText"),finalScore:$("finalScore"),finalBest:$("finalBest"),finalCrashes:$("finalCrashes"),score:$("score"),combo:$("combo"),battery:$("battery"),batteryBar:$("batteryBar"),best:$("best"),accidents:$("accidents"),accidentBar:$("accidentBar"),mission:$("mission"),missionSub:$("missionSub"),hint:$("hint"),clock:$("clock"),toast:$("toast"),horn:$("horn"),camera:$("camera"),quality:$("quality"),soundToggle:$("soundToggle")};
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -156,6 +151,28 @@ for(let i=0;i<22;i++){
  const pot=new THREE.Mesh(new THREE.CylinderGeometry(.2,.24,.45,10),mat(0x6a4630));pot.position.set(x+.75,.34,z+.3);city.add(pot);
  stalls.push({x,z});
 }
+const pickups=[];
+for(let i=0;i<12;i++){
+ const x=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP,z=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP;
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(1.25,.15,8,24),mat(0x6dff91));ring.rotation.x=Math.PI/2;ring.position.set(x,.35,z);scene.add(ring);pickups.push({mesh:ring,x,z,active:true});
+}
+const destination=new THREE.Mesh(new THREE.TorusGeometry(1.8,.18,8,28),mat(0xffc82e));destination.rotation.x=Math.PI/2;destination.position.set(0,.35,0);destination.visible=false;scene.add(destination);
+function setMission(){ui.mission.textContent=state.passenger?"যাত্রীকে গন্তব্যে পৌঁছান":"যাত্রী খুঁজুন";ui.missionSub.textContent=state.passenger?"হলুদ চিহ্নে ধীরে থামুন":"সবুজ চিহ্নের কাছে ধীরে থামুন"}
+function updateMissions(dt){
+ for(const p of pickups){if(p.active){p.mesh.rotation.z+=dt*.55;p.mesh.position.y=.35+Math.sin(performance.now()*.002)*.12;
+  if(!state.passenger&&Math.hypot(player.position.x-p.x,player.position.z-p.z)<3.8&&Math.abs(state.speed)<2.5){
+   p.active=false;p.mesh.visible=false;state.passenger=true;
+   let x,z;do{x=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP;z=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP}while(Math.hypot(x-player.position.x,z-player.position.z)<80);
+   destination.position.set(x,.35,z);destination.visible=true;toast("যাত্রী উঠেছেন। নিরাপদে গন্তব্যে পৌঁছে দিন।");setMission();break;
+  }
+ }}
+ if(state.passenger&&Math.hypot(player.position.x-destination.position.x,player.position.z-destination.position.z)<4.2&&Math.abs(state.speed)<2.5){
+  state.passenger=false;destination.visible=false;state.score+=100;state.streak=Math.min(10,state.streak+1);
+  if(state.score>state.best){state.best=state.score;try{localStorage.setItem("ba_best",String(state.best))}catch{}}
+  const p=pickups.find(x=>!x.active);if(p){p.active=true;p.mesh.visible=true}
+  toast("যাত্রী নিরাপদে পৌঁছেছেন! +৳১০০");setMission();
+ }
+}
 const chargers=[];
 for(let i=0;i<9;i++){
  const x=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP+4.6,z=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP;
@@ -164,8 +181,8 @@ for(let i=0;i<9;i++){
 }
 const chasers=[];let cameraMode=0;
 const cameraOffsets=[new THREE.Vector3(0,6.2,-10),new THREE.Vector3(0,2.7,-3.8),new THREE.Vector3(0,12,-17)];
-const state={running:false,paused:false,over:false,speed:0,yaw:0,battery:100,loss:0,best:Number(localStorage.getItem("ba_best")||0),anger:0,combo:1,comboTimer:0,crashes:0,time:8.5,toastTimer:0,trafficClock:0,hornCooldown:0,bombCooldown:0,collisionCooldown:0,chargeTimer:0,jumpTime:0,jumpCooldown:0,muted:false,quality:localStorage.getItem("ba_quality")||"medium"};
-const keys={},controls={left:false,right:false,throttle:false,brake:false,boost:false};
+const state={running:false,paused:false,over:false,speed:0,yaw:0,battery:100,score:0,best:Number(localStorage.getItem("ba_best")||0),accidents:0,streak:1,crashes:0,mission:0,passenger:false,time:8.5,toastTimer:0,trafficClock:0,hornCooldown:0,collisionCooldown:0,chargeTimer:0,muted:false,quality:localStorage.getItem("ba_quality")||"medium"};
+const keys={},controls={left:false,right:false,throttle:false,brake:false};
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function toast(message){ui.toast.textContent=message;ui.toast.classList.add("show");state.toastTimer=2.3}
 let audioCtx=null;
@@ -178,17 +195,7 @@ function horn(){
  if(!state.running||state.paused||state.over||state.hornCooldown>0)return;state.hornCooldown=1.1;tone(360,.22,"sawtooth",.045);tone(440,.22,"square",.025);toast("পোঁ পোঁ! পথ ছাড়ুন!");
  for(const p of people){const d=Math.hypot(p.mesh.position.x-player.position.x,p.mesh.position.z-player.position.z);if(d<12)p.dir=Math.sign(p.mesh.position[p.axis==="x"?"x":"z"]-(p.axis==="x"?player.position.x:player.position.z))||p.dir}
 }
-function crowdDistraction(){
- if(!state.running||state.paused||state.over||state.bombCooldown>0)return;state.bombCooldown=10;state.battery=Math.max(0,state.battery-8);
- tone(70,.45,"sawtooth",.08);tone(110,.35,"triangle",.06);state.anger=Math.max(0,state.anger-35);
- for(const c of chasers){c.stun=3.5;c.mesh.position.x+=(c.mesh.position.x-player.position.x)*.85;c.mesh.position.z+=(c.mesh.position.z-player.position.z)*.85}
- toast("হইচই! জনতা ছত্রভঙ্গ — চার্জ −৮%");
-}
 function cycleCamera(){cameraMode=(cameraMode+1)%cameraOffsets.length;toast(["পেছনের ক্যামেরা","ড্রাইভার ভিউ","উপরের ক্যামেরা"][cameraMode])}
-function jump(){
- if(!state.running||state.paused||state.over||state.jumpCooldown>0)return;
- state.jumpTime=.62;state.jumpCooldown=2.1;tone(190,.12,"triangle",.04);toast("লাফ!");
-}
 function applyQuality(value){
  state.quality=value;try{localStorage.setItem("ba_quality",value)}catch{}
  renderer.shadowMap.enabled=value==="high";sun.castShadow=value==="high";
@@ -196,53 +203,43 @@ function applyQuality(value){
  scene.fog.near=value==="low"?80:105;scene.fog.far=value==="low"?260:360;
  if(ui.quality)ui.quality.value=value;
 }
-ui.horn.onclick=horn;ui.shout.onclick=crowdDistraction;ui.jump.onclick=jump;ui.camera.onclick=cycleCamera;
+ui.horn.onclick=horn;ui.camera.onclick=cycleCamera;
 ui.soundToggle.onclick=()=>{state.muted=!state.muted;ui.soundToggle.textContent=state.muted?"শব্দ: বন্ধ":"শব্দ: চালু";if(!state.muted)tone(520,.08,"sine",.025)};
 ui.quality.onchange=()=>applyQuality(ui.quality.value);
 applyQuality(state.quality);ui.soundToggle.textContent="শব্দ: চালু";
 addEventListener("keydown",e=>{
  keys[e.key.toLowerCase()]=true;if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();
- if(e.key.toLowerCase()==="p")togglePause();if(e.key.toLowerCase()==="h")horn();if(e.key.toLowerCase()==="b"||e.key.toLowerCase()==="x")crowdDistraction();if(e.key.toLowerCase()==="c")cycleCamera();if(e.code==="Space")jump();
+ if(e.key.toLowerCase()==="p")togglePause();if(e.key.toLowerCase()==="h")horn();if(e.key.toLowerCase()==="c")cycleCamera();
 });
 addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 document.querySelectorAll("[data-control]").forEach(button=>{
  const key=button.dataset.control,down=e=>{e.preventDefault();controls[key]=true},up=e=>{e.preventDefault();controls[key]=false};
  button.addEventListener("pointerdown",down);button.addEventListener("pointerup",up);button.addEventListener("pointercancel",up);button.addEventListener("pointerleave",up);
 });
-function spawnChaser(){
- if(chasers.length>=12)return;
- const angle=Math.random()*Math.PI*2,dist=23+Math.random()*10,p=makePerson();
- p.position.set(clamp(player.position.x+Math.cos(angle)*dist,-HALF,HALF),0,clamp(player.position.z+Math.sin(angle)*dist,-HALF,HALF));scene.add(p);
- chasers.push({mesh:p,speed:2.7+Math.random()*1.3,stun:0});
-}
 function endGame(title,reason){
  if(state.over)return;state.over=true;state.running=false;ui.endTitle.textContent=title;ui.endText.textContent=reason;
- ui.finalLoss.textContent="৳"+Math.round(state.loss);ui.finalBest.textContent="৳"+Math.round(state.best);ui.finalCrashes.textContent=String(state.crashes);ui.endPanel.classList.remove("hidden");
+ ui.finalScore.textContent="৳"+Math.round(state.score);ui.finalBest.textContent="৳"+Math.round(state.best);ui.finalCrashes.textContent=String(state.accidents);ui.endPanel.classList.remove("hidden");
 }
-function impact(kind,amount){
- if(state.collisionCooldown>0)return;state.collisionCooldown=.7;state.crashes++;state.comboTimer=4.5;state.combo=Math.min(8,state.combo+1);
- const gain=Math.round(amount*state.combo);state.loss+=gain;state.anger=clamp(state.anger+(kind==="pedestrian"?24:14),0,100);state.speed*=kind==="pedestrian"?.15:.34;
- tone(95,.16,"triangle",.06);tone(62,.2,"sawtooth",.035);toast((kind==="pedestrian"?"পথচারীর সঙ্গে ধাক্কা! ":"গাড়িতে ধাক্কা! ")+"জাতীয় ক্ষতি +৳"+gain);
- if(state.anger>=20&&chasers.length<Math.ceil(state.anger/12))spawnChaser();
+function impact(kind){
+ if(state.collisionCooldown>0)return;state.collisionCooldown=.8;state.crashes++;state.accidents++;state.streak=1;
+ state.score=Math.max(0,state.score-35);state.battery=Math.max(0,state.battery-5);state.speed*=kind==="pedestrian"?.12:.3;
+ tone(95,.16,"triangle",.06);toast((kind==="pedestrian"?"পথচারীর সঙ্গে দুর্ঘটনা। ":"যানবাহনে ধাক্কা। ")+"স্কোর −৩৫");
+ if(state.accidents>=5)endGame("যাত্রা বাতিল","একাধিক দুর্ঘটনার কারণে এই যাত্রা শেষ হয়েছে।");
 }
 function updatePlayer(dt){
- const forward=keys.w||keys.arrowup||controls.throttle,reverse=keys.s||keys.arrowdown||controls.brake,left=keys.a||keys.arrowleft||controls.left,right=keys.d||keys.arrowright||controls.right,boost=keys.shift||controls.boost;
- if(forward&&state.battery>0)state.speed=Math.min(boost?25:17,state.speed+(boost?15:10)*dt);
- else if(reverse)state.speed=Math.max(-5,state.speed-22*dt);else state.speed*=Math.exp(-.7*dt);
- const steer=(right?1:0)-(left?1:0),factor=clamp(Math.abs(state.speed)/4,0,1);state.yaw+=steer*1.8*factor*dt*(state.speed<0?-1:1);player.rotation.y=state.yaw;
+ const forward=keys.w||keys.arrowup||controls.throttle,reverse=keys.s||keys.arrowdown||controls.brake,left=keys.a||keys.arrowleft||controls.left,right=keys.d||keys.arrowright||controls.right;
+ if(forward&&state.battery>0)state.speed=Math.min(11.5,state.speed+5.5*dt);
+ else if(reverse)state.speed=Math.max(-4,state.speed-9.5*dt);else state.speed*=Math.exp(-.8*dt);
+ const steer=(right?1:0)-(left?1:0),factor=clamp(Math.abs(state.speed)/3.5,0,1);state.yaw+=steer*1.5*factor*dt*(state.speed<0?-1:1);player.rotation.y=state.yaw;
  const old=player.position.clone();player.position.x+=Math.sin(state.yaw)*state.speed*dt;player.position.z+=Math.cos(state.yaw)*state.speed*dt;
  player.position.x=clamp(player.position.x,-HALF-10,HALF+10);player.position.z=clamp(player.position.z,-HALF-10,HALF+10);
- if(Math.abs(state.speed)>1)state.battery=Math.max(0,state.battery-(.06+Math.abs(state.speed)*.004+(boost?.35:0))*dt);
- if(state.collisionCooldown>0)state.collisionCooldown-=dt;if(state.hornCooldown>0)state.hornCooldown-=dt;if(state.bombCooldown>0)state.bombCooldown-=dt;if(state.jumpCooldown>0)state.jumpCooldown-=dt;if(state.jumpTime>0){state.jumpTime=Math.max(0,state.jumpTime-dt);player.position.y=Math.sin((1-state.jumpTime/.62)*Math.PI)*1.35}else player.position.y=0;
- if(state.comboTimer>0)state.comboTimer-=dt;else state.combo=1;
- for(const t of traffic){const dx=player.position.x-t.mesh.position.x,dz=player.position.z-t.mesh.position.z;if(dx*dx+dz*dz<9){player.position.copy(old);impact("vehicle",120+Math.round(Math.abs(state.speed)*8));break}}
- for(const o of obstacles){const dx=player.position.x-o.x,dz=player.position.z-o.z;if(dx*dx+dz*dz<(o.r+1.15)**2){player.position.copy(old);if(Math.abs(state.speed)>4)impact("building",70);state.speed*=.2;break}}
- for(const p of people){const dx=player.position.x-p.mesh.position.x,dz=player.position.z-p.mesh.position.z;if(dx*dx+dz*dz<2.4&&Math.abs(state.speed)>5){impact("pedestrian",220);break}}
- for(const c of chasers){const d=Math.hypot(player.position.x-c.mesh.position.x,player.position.z-c.mesh.position.z);if(d<2.3&&c.stun<=0){endGame("জনতা আপনাকে ধরে ফেলেছে!","পালানোর পথ বন্ধ হয়ে গেছে।");break}}
+ if(Math.abs(state.speed)>1)state.battery=Math.max(0,state.battery-(.12+Math.abs(state.speed)*.008)*dt);
+ if(state.collisionCooldown>0)state.collisionCooldown-=dt;if(state.hornCooldown>0)state.hornCooldown-=dt;
+ for(const t of traffic){const dx=player.position.x-t.mesh.position.x,dz=player.position.z-t.mesh.position.z;if(dx*dx+dz*dz<9){player.position.copy(old);impact("vehicle");break}}
+ for(const o of obstacles){const dx=player.position.x-o.x,dz=player.position.z-o.z;if(dx*dx+dz*dz<(o.r+1.15)**2){player.position.copy(old);if(Math.abs(state.speed)>3)impact("building");state.speed*=.2;break}}
+ for(const p of people){const dx=player.position.x-p.mesh.position.x,dz=player.position.z-p.mesh.position.z;if(dx*dx+dz*dz<2.4&&Math.abs(state.speed)>3){player.position.copy(old);impact("pedestrian");break}}
  for(const c of chargers){if(c.cooldown>0)c.cooldown-=dt;const d=Math.hypot(player.position.x-c.x,player.position.z-c.z);if(d<3.2&&c.cooldown<=0&&state.battery<96){state.battery=Math.min(100,state.battery+32);c.cooldown=22;toast("চার্জিং পয়েন্ট: ব্যাটারি +৩২%")}}
- if(state.battery<=0&&Math.abs(state.speed)<.5){state.chargeTimer+=dt;if(state.chargeTimer>12)endGame("চার্জ শেষ!","অটো থেমে গেছে—পরের যাত্রার আগে চার্জিং পয়েন্ট খুঁজুন।")}else state.chargeTimer=0;
- state.anger=Math.max(0,state.anger-dt*.7);if(state.anger>15&&chasers.length<Math.ceil(state.anger/13))spawnChaser();
- if(state.loss>state.best){state.best=state.loss;try{localStorage.setItem("ba_best",String(state.best))}catch{}}
+ if(state.battery<=0&&Math.abs(state.speed)<.5){state.chargeTimer+=dt;if(state.chargeTimer>12)endGame("চার্জ শেষ!","অটো থেমে গেছে—চার্জিং পয়েন্ট খুঁজুন।")}else state.chargeTimer=0;
 }
 function updateTraffic(dt){
  state.trafficClock=(state.trafficClock+dt)%40;const greenAxis=state.trafficClock<20?"x":"z";
@@ -263,32 +260,26 @@ function updatePeople(dt){
   if(Math.hypot(p.mesh.position.x-player.position.x,p.mesh.position.z-player.position.z)<4)p.mesh.position[axis]-=p.dir*p.speed*dt*1.5;
  }
 }
-function updateCrowd(dt){
- for(let i=chasers.length-1;i>=0;i--){const c=chasers[i];if(c.stun>0){c.stun-=dt;continue}
-  const dx=player.position.x-c.mesh.position.x,dz=player.position.z-c.mesh.position.z,d=Math.hypot(dx,dz)||1;
-  c.mesh.position.x+=dx/d*(c.speed+state.anger/100*2.6)*dt;c.mesh.position.z+=dz/d*(c.speed+state.anger/100*2.6)*dt;c.mesh.rotation.y=Math.atan2(dx,dz);
- }
-}
 function updateHud(){
  const bn=n=>Math.round(n).toString().replace(/\d/g,d=>"০১২৩৪৫৬৭৮৯"[d]);
- ui.loss.textContent="৳"+bn(state.loss);ui.combo.textContent="×"+bn(state.combo)+" কম্বো";ui.combo.classList.toggle("hidden",state.combo<2);
+ ui.score.textContent="৳"+bn(state.score);ui.combo.textContent="পরপর সফল যাত্রা ×"+bn(state.streak);ui.combo.classList.toggle("hidden",state.streak<2);
  ui.battery.textContent=bn(state.battery)+"%";ui.batteryBar.style.width=state.battery+"%";ui.batteryBar.style.background=state.battery<20?"#f15d45":"#72e69a";
- ui.best.textContent="৳"+bn(state.best);ui.anger.textContent=bn(state.anger)+"%";ui.angerBar.style.width=state.anger+"%";
- ui.behind.classList.toggle("hidden",state.anger<35||chasers.length===0);
- ui.hint.textContent=state.battery<20?"চার্জ কম! সবুজ চার্জিং পয়েন্ট খুঁজুন।":state.anger>35?"জনতা পেছনে! গতি বাড়ান বা শব্দবোমা ব্যবহার করুন।":"ট্রাফিকের ফাঁক দিয়ে চালান। ধাক্কায় বাড়বে জাতীয় ক্ষতি!";
+ ui.best.textContent="৳"+bn(state.best);ui.accidents.textContent=bn(state.accidents);ui.accidentBar.style.width=(state.accidents/5*100)+"%";
+ ui.hint.textContent=state.battery<20?"চার্জ কম! মানচিত্রে সবুজ চার্জিং পয়েন্ট খুঁজুন।":state.passenger?"যাত্রীকে নিরাপদে হলুদ গন্তব্যে পৌঁছে দিন।":"সবুজ চিহ্নে ধীরে থামিয়ে যাত্রী তুলুন।";
+ ui.mission.textContent=state.passenger?"যাত্রীকে গন্তব্যে পৌঁছান":"যাত্রী খুঁজুন";ui.missionSub.textContent=state.passenger?"হলুদ চিহ্নে যান এবং ধীরে থামুন":"সবুজ চিহ্নের কাছে অটো থামান";
 }
 function drawMap(){
  map.clearRect(0,0,180,180);map.fillStyle="#26352a";map.fillRect(0,0,180,180);map.strokeStyle="#b3aa8c";map.lineWidth=4;
  for(let i=-GRID;i<=GRID;i++){const p=90+i*STEP/(HALF*2)*180;map.beginPath();map.moveTo(p,0);map.lineTo(p,180);map.moveTo(0,p);map.lineTo(180,p);map.stroke()}
  map.fillStyle="#73f5a0";for(const c of chargers){map.beginPath();map.arc(90+c.x/(HALF*2)*180,90+c.z/(HALF*2)*180,2.5,0,Math.PI*2);map.fill()}
- map.fillStyle="#ff6b58";for(const c of chasers){map.beginPath();map.arc(90+c.mesh.position.x/(HALF*2)*180,90+c.mesh.position.z/(HALF*2)*180,3,0,Math.PI*2);map.fill()}
+ map.fillStyle="#7bff9c";for(const p of pickups){if(p.active){map.beginPath();map.arc(90+p.x/(HALF*2)*180,90+p.z/(HALF*2)*180,3,0,Math.PI*2);map.fill()}}
+ if(state.passenger){map.fillStyle="#ffd45a";map.beginPath();map.arc(90+destination.position.x/(HALF*2)*180,90+destination.position.z/(HALF*2)*180,4,0,Math.PI*2);map.fill()}
  const px=90+player.position.x/(HALF*2)*180,pz=90+player.position.z/(HALF*2)*180;map.fillStyle="#ffca35";map.beginPath();map.arc(px,pz,4,0,Math.PI*2);map.fill();
 }
 function reset(){
- player.position.set(0,0,0);state.speed=0;state.yaw=0;player.rotation.y=0;state.battery=100;state.loss=0;state.anger=0;state.combo=1;state.comboTimer=0;state.crashes=0;state.time=8.5;state.over=false;state.chargeTimer=0;state.collisionCooldown=0;state.jumpTime=0;state.jumpCooldown=0;player.position.y=0;
- chasers.forEach(c=>scene.remove(c.mesh));chasers.length=0;chargers.forEach(c=>c.cooldown=0);
- traffic.forEach((t,i)=>{const axis=t.axis==="x"?"x":"z";t.mesh.position[axis]=(i%2?1:-1)*(30+(i*19)%180);t.speed=t.base});
- ui.endPanel.classList.add("hidden");ui.pausePanel.classList.add("hidden");ui.behind.classList.add("hidden");updateHud();drawMap();
+ player.position.set(0,0,0);state.speed=0;state.yaw=0;player.rotation.y=0;state.battery=100;state.score=0;state.accidents=0;state.streak=1;state.crashes=0;state.mission=0;state.passenger=false;state.time=8.5;state.over=false;state.chargeTimer=0;state.collisionCooldown=0;
+ chargers.forEach(c=>c.cooldown=0);pickups.forEach(p=>{p.active=true;p.mesh.visible=true});
+ destination.visible=false;ui.endPanel.classList.add("hidden");ui.pausePanel.classList.add("hidden");updateHud();drawMap();
 }
 function start(){reset();state.running=true;state.paused=false;ui.overlay.classList.add("hidden");toast("ঢাকার রাস্তায় নেমে পড়ুন!")}
 function togglePause(){if(!state.running||state.over)return;state.paused=!state.paused;ui.pausePanel.classList.toggle("hidden",!state.paused)}
@@ -302,7 +293,7 @@ let last=performance.now(),frame=0;
 function loop(now){
  requestAnimationFrame(loop);const dt=Math.min(.04,(now-last)/1000||0);last=now;
  if(state.running&&!state.paused&&!state.over){
-  updatePlayer(dt);updateTraffic(dt);updatePeople(dt);updateCrowd(dt);state.time=(state.time+dt*.012)%24;
+  updatePlayer(dt);updateTraffic(dt);updatePeople(dt);updateMissions(dt);state.time=(state.time+dt*.012)%24;
   const two=n=>Math.floor(n).toString().padStart(2,"0");ui.clock.textContent=two(Math.floor(state.time))+":"+two(Math.floor((state.time%1)*60));
   if(state.toastTimer>0){state.toastTimer-=dt;if(state.toastTimer<=0)ui.toast.classList.remove("show")}
   updateHud();if(++frame%7===0)drawMap();
@@ -311,4 +302,4 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5))});
-camera.position.set(0,8,-12);camera.lookAt(0,1,5);drawMap();updateHud();window.__GAME_STATE__=state;window.__GAME_READY__=true;
+camera.position.set(0,8,-12);camera.lookAt(0,1,5);setMission();drawMap();updateHud();window.__GAME_STATE__=state;window.__GAME_READY__=true;
