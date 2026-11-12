@@ -586,7 +586,7 @@ async function start() {
     configureRenderer();
     try {
       assetPipeline = await createThreeAssetPipeline(renderer);
-      $("asset-pipeline-status").textContent = "GLTF · DRACO · KTX2 READY";
+      $("asset-pipeline-status").textContent = "GLTF READY · " + [assetPipeline.dracoLoader ? "DRACO" : "NO DRACO", assetPipeline.ktx2Loader ? "KTX2" : "STANDARD TEXTURES"].join(" · ");
     } catch (assetError) {
       $("asset-pipeline-status").textContent = "GLTF LOADER UNAVAILABLE";
       console.warn("Optional compressed asset pipeline unavailable:", assetError);
