@@ -125,6 +125,7 @@ function togglePause(){
   else{gameState=transitionGameState(gameState,"playing");clock.getDelta();}
 }
 function update(dt){
+  const previousZ=vehicle.position.z;
   const go=keys.has("w")||keys.has("arrowup")||controls.forward;
   const stop=keys.has("s")||keys.has("arrowdown")||controls.brake;
   const left=keys.has("a")||keys.has("arrowleft")||controls.left;
@@ -170,7 +171,7 @@ try{
 }catch(error){
   console.error(error);
   errorPanel.hidden=false;
-  $("#error-text").textContent=error.message||"WebGL renderer error";
+  $("error-text").textContent=error.message||"WebGL renderer error";
 }
 window.addEventListener("beforeunload",()=>{
   persistGame();
