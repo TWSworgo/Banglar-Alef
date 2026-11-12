@@ -3,10 +3,10 @@
 A browser-based 3D Dhaka city-driving game built with an original Three.js implementation.
 
 ## Gameplay
-- Drive a battery-powered CNG auto through a procedurally generated city.
+- Drive a battery-powered CNG auto through a procedurally generated city with a live speedometer and day/night lighting.
 - Pick up passengers at green markers and deliver them safely to yellow destinations.
 - Earn points for completed passenger trips; collisions reduce the score and count as accidents.
-- Stop carefully near pickup and drop-off markers.
+- Stop carefully near pickup and drop-off markers and earn a small safe-stop bonus at red traffic lights.
 - Manage battery charge with roadside charging points.
 - Navigate traffic, traffic lights, pedestrians, buses, trucks, CNGs, vans, SUVs and other vehicles.
 - Use the minimap, camera views, horn, pause menu and graphics/audio settings.
