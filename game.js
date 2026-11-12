@@ -270,7 +270,7 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.7))});
-camera.position.set(0,8,-12);camera.lookAt(0,1,5);drawMap();updateHud();window.__GAME_READY__=true;function reset(){
+camera.position.set(0,8,-12);camera.lookAt(0,1,5);drawMap();updateHud();window.__GAME_STATE__=state;window.__GAME_READY__=true;function reset(){
  player.position.set(0,0,0);state.speed=0;state.yaw=0;player.rotation.y=0;state.battery=100;state.loss=0;state.anger=0;state.combo=1;state.comboTimer=0;state.crashes=0;state.time=8.5;state.over=false;state.hornCooldown=0;state.bombCooldown=0;state.collisionCooldown=0;state.shake=0;
  chasers.forEach(c=>scene.remove(c.mesh));chasers.length=0;chargers.forEach(c=>c.cooldown=0);
  traffic.forEach((t,i)=>{const a=t.axis==="x"?"x":"z";t.mesh.position[a]=(i%2?1:-1)*(30+(i*19)%180);t.speed=t.base});
