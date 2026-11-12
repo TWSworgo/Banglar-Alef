@@ -1,4 +1,8 @@
-# বাংলার আলেফ — সম্পূর্ণ গেম ফিচার ও সমাপ্তির চেকলিস্ট
+# বাংলার আলেফ — Legacy Development Notes
+
+> **এই পুরোনো checklist superseded.** নতুন আসল gameplay-এর একমাত্র active feature specification হলো [`MASTER_FEATURES.md`](./MASTER_FEATURES.md)। নিচের পুরোনো Lab/Showcase implementation record-গুলো historical reference; এগুলো নতুন production gameplay-এর completion হিসেবে গণ্য হবে না.
+
+# Legacy Feature Checklist (Archived)
 
 > **Final Release Specification** · Website · 3D · Open World
 
