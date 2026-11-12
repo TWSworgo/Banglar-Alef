@@ -435,3 +435,11 @@
 - OpenStreetMap-এর road data-কে সম্পূর্ণ 3D city হিসেবে গণ্য করা যাবে না।
 - প্রতিটি ফিচার implement, integrate ও test করার পরেই তার checkbox সম্পন্ন হবে।
 - সম্পূর্ণ ঢাকার প্রতিটি রাস্তা ও ভবনকে হুবহু বাস্তবের মতো বানানো আলাদা বিশাল 3D mapping কাজ; অসম্পূর্ণ এলাকাকে সম্পূর্ণ বলে দাবি করা যাবে না।
+
+### Feature 03 visual reconstruction upgrade — 2026-11-12
+
+- Replaced the plain OSM road strips with batched asphalt, raised curb and sidewalk surface layers, plus instanced broken lane markings where road width/lane metadata supports them.
+- Replaced the featureless building blocks with varied procedural facade shells, instanced facade-window modules, selective balcony slabs and roof parapet geometry. Building footprints and tagged/estimated heights remain geographically anchored to OSM.
+- Added deterministic per-building facade variation so the same OSM extract produces a stable visual result.
+- Added diagnostics for generated facade windows and road markings; the browser acceptance test now checks that both detail systems produce geometry.
+- These are procedural visual reconstructions, not surveyed facade replicas. OSM does not provide reliable window layouts, balcony positions, materials or complete building heights. Exact real-building appearance still requires licensed street-level imagery, photogrammetry/3D scans or authored/verified assets. This commit does not claim photorealistic completion of Uttara or all Dhaka.
