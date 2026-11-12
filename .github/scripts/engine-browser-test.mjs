@@ -170,10 +170,10 @@ try {
   await browser.close();
 }
 
+for (const warning of browserWarnings) console.log("WARN: " + warning);
 if (browserErrors.length) failures.push(...browserErrors);
 if (failures.length) {
   for (const failure of failures) console.error("FAIL: " + failure);
   process.exit(1);
 }
-for (const warning of browserWarnings) console.log("WARN: " + warning);
 console.log("All headless browser acceptance checks passed.");
