@@ -68,8 +68,8 @@
 - Shared geometry/material/texture একবার dispose করার ResourceTracker; tab hidden হলে render loop pause এবং visible হলে resume।
 - WebGL failure/context loss message ও renderer retry flow।
 - Node unit tests: spatial hash query/update/remove, duplicate-free collision pairs, resource disposal এবং texture-memory estimates — **৬টি test passed**।
-- Playwright Chromium acceptance: desktop ও mobile viewport-এ WebGL 2 initialization, canvas visibility, lighting/weather preset composition, camera reset এবং telemetry — **passed**।
-- GitHub Actions run `43213260721`: source validation, subsystem unit tests এবং browser acceptance — **সব job passed**।
+- Playwright Chromium acceptance: desktop ও mobile viewport-এ WebGL 2 initialization, visible canvas, positive draw calls/triangles, lighting/weather preset composition, camera reset, GPU texture estimate ও collision registration — **passed**। আলাদা geometry test-এ opaque wall-এর পেছনে থাকা sphere occlusion culler দ্বারা বাদ পড়েছে — **passed**।
+- GitHub Actions run `43214089435`: source validation, ৬টি subsystem unit test এবং desktop/mobile Chromium browser acceptance — **সব job passed**।
 - CI-এর SwiftShader/virtual viewport ফল real Android/Desktop GPU benchmark নয়; displayed GPU texture memory estimate-ও full driver VRAM measurement নয়।
 
 **Feature 02-তে এখনও যেসব কাজ অন্য বাস্তব scope-এর সঙ্গে যুক্ত:** সম্পূর্ণ গেমের real-world GLTF/texture asset library ও streaming (Feature 03/04-এর actual assets আসার পর), dynamic gameplay collision response (Feature 11), এবং বাস্তব Android/Desktop hardware-এর sustained FPS, thermal ও battery acceptance। এগুলোকে এই Engine Lab-এর static checks দিয়ে সম্পন্ন বলে দাবি করা হচ্ছে না।
