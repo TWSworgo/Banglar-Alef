@@ -16,3 +16,6 @@
 #safetyPanel i{height:5px;background:#ffffff30;border-radius:8px;overflow:hidden}
 #safetyPanel em{display:block;height:100%;width:0;background:#e0a34a;border-radius:8px}
 @media(max-width:700px){#safetyPanel{width:185px;padding:7px 9px}}
+
+.meters>div:first-child{min-width:62px}
+@media(max-width:700px){.meters>div:first-child{min-width:48px}}
