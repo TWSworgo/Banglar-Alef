@@ -1,0 +1,44 @@
+name: Graphics Engine Validation
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "engine.js"
+      - "engine.html"
+      - ".github/workflows/engine-validation.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "engine.js"
+      - "engine.html"
+      - ".github/workflows/engine-validation.yml"
+
+jobs:
+  syntax-and-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Validate JavaScript module syntax
+        run: node --check engine.js
+      - name: Validate engine page contract
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const html = readFileSync('engine.html', 'utf8');
+          const js = readFileSync('engine.js', 'utf8');
+          const requiredHtml = ['id="viewport"', 'id="time-of-day"', 'id="weather-mode"', 'id="reset-camera"', 'id="retry-renderer"'];
+          const requiredJs = ['WebGLRenderer', 'ACESFilmicToneMapping', 'PMREMGenerator', 'OrbitControls', 'function setWeather', 'function animate'];
+          for (const token of requiredHtml) {
+            if (!html.includes(token)) throw new Error('Missing HTML contract: ' + token);
+          }
+          for (const token of requiredJs) {
+            if (!js.includes(token)) throw new Error('Missing engine contract: ' + token);
+          }
+          console.log('Graphics engine source and page contract checks passed.');
+          NODE
