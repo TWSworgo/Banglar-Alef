@@ -2,6 +2,7 @@ import { chromium } from "playwright";
 
 const failures = [];
 const browserErrors = [];
+const browserWarnings = [];
 const browser = await chromium.launch({
   headless: true,
   args: [
@@ -24,6 +25,7 @@ async function verifyViewport(name, options = {}) {
   page.on("pageerror", error => browserErrors.push(name + ": " + error.message));
   page.on("console", message => {
     if (message.type() === "error") browserErrors.push(name + " console: " + message.text());
+    if (message.type() === "warning") browserWarnings.push(name + " warning: " + message.text());
   });
 
   const response = await page.goto("http://127.0.0.1:4173/engine.html", {
@@ -165,4 +167,5 @@ if (failures.length) {
   for (const failure of failures) console.error("FAIL: " + failure);
   process.exit(1);
 }
+for (const warning of browserWarnings) console.log("WARN: " + warning);
 console.log("All headless browser acceptance checks passed.");
