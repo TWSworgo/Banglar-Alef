@@ -5,7 +5,7 @@ const viewport = $("viewport");
 const status = $("scene-status");
 const errorPanel = $("scene-error");
 const errorMessage = $("scene-error-message");
-let renderer, scene, camera, controls, resizeObserver, animationFrame;
+let renderer, scene, camera, controls, resizeObserver, animationFrame, environmentMap;
 let lastFrame = performance.now(), fpsFrames = 0, fpsStart = lastFrame;
 let adaptiveScale = 1, qualityTier = "AUTO";
 let disposed = false;
@@ -69,6 +69,7 @@ function createMaterialSet() {
 }
 
 function addGround(materials) {
+  // World scale convention: one Three.js world unit represents one metre.
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(260, 260), new THREE.MeshStandardMaterial({ color: 0x667064, roughness: 1 }));
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.12;
@@ -287,7 +288,8 @@ function configureRenderer() {
   lights = createScene();
   const pmrem = new THREE.PMREMGenerator(renderer);
   const environment = new RoomEnvironment();
-  scene.environment = pmrem.fromScene(environment, 0.04).texture;
+  environmentMap = pmrem.fromScene(environment, 0.04).texture;
+  scene.environment = environmentMap;
   pmrem.dispose();
   environment.dispose();
   resizeObserver = new ResizeObserver(resize);
@@ -465,6 +467,7 @@ function disposeRenderer() {
   if (animationFrame) cancelAnimationFrame(animationFrame);
   resizeObserver?.disconnect();
   controls?.dispose();
+  if (environmentMap) { environmentMap.dispose(); environmentMap = null; }
   if (renderer) {
     renderer.dispose();
     renderer.domElement.remove();
