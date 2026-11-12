@@ -79,11 +79,31 @@ function makeCng(){
  box(g,0,.52,1.35,1.65,.12,.12,M.black);
  for(const x of [-.98,.98])for(const z of [-.85,.9]){const w=new THREE.Mesh(new THREE.CylinderGeometry(.33,.33,.18,16),M.black);w.rotation.z=Math.PI/2;w.position.set(x,.4,z);g.add(w);const hub=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,.19,12),M.white);hub.rotation.z=Math.PI/2;hub.position.set(x,.4,z);g.add(hub)}
  box(g,0,1.93,-.1,.12,.12,2.6,M.black,false);
+ // Front fascia, lamps, mirrors and rear passenger step
+ box(g,0,.83,1.37,1.55,.25,.12,M.black,false);
+ box(g,0,.84,1.45,.62,.12,.035,M.white,false);
+ for(const x of [-.66,.66]){
+  box(g,x,1.08,1.36,.34,.22,.09,new THREE.MeshStandardMaterial({color:0xfff0bd,emissive:0xffd36b,emissiveIntensity:1.15}),false);
+  box(g,x,1.05,-1.34,.28,.24,.08,new THREE.MeshStandardMaterial({color:0xc52d20,emissive:0x5b0804}),false);
+  box(g,x*1.42,1.42,.48,.12,.12,.42,M.black,false);
+  box(g,x*1.55,1.47,.62,.2,.13,.23,M.glass,false);
+  box(g,x,1.8,-.12,.08,.55,.08,M.black,false);
+ }
+ box(g,0,.42,-1.34,1.5,.16,.14,M.black,false);
  return g;
 }
 function makeCar(color=0x386b9a){
  const g=new THREE.Group(),paint=mat(color,.45);box(g,0,.65,0,2.05,.7,4,paint);box(g,0,1.2,-.25,1.7,.65,2.1,M.glass);box(g,0,.48,2.03,1.8,.2,.12,M.black);
  for(const x of [-1.06,1.06])for(const z of [-1.25,1.25]){let w=new THREE.Mesh(new THREE.CylinderGeometry(.34,.34,.2,14),M.black);w.rotation.z=Math.PI/2;w.position.set(x,.38,z);g.add(w)}
+ // Recognizable front/rear lighting and exterior details
+ for(const x of [-.7,.7]){
+  box(g,x,.83,2.04,.42,.2,.09,new THREE.MeshStandardMaterial({color:0xfff1cf,emissive:0xffd98a,emissiveIntensity:.9}),false);
+  box(g,x,.82,-2.04,.42,.2,.09,new THREE.MeshStandardMaterial({color:0xc52b22,emissive:0x4b0804}),false);
+  box(g,x*1.48,1.15,.25,.22,.13,.36,M.black,false);
+  box(g,x*1.55,1.19,.3,.22,.12,.24,M.glass,false);
+ }
+ box(g,0,.57,2.045,.75,.22,.07,M.black,false);
+ box(g,0,.43,-2.045,.9,.16,.07,M.black,false);
  return g;
 }
 function makePerson(color){
