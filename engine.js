@@ -3,6 +3,14 @@ import { createThreeAssetPipeline } from './engine-assets.js';
 import { buildDhakaShowcase } from './engine-showcase.js';
 
 export let assetPipeline = null;
+
+export function getEngineDiagnostics() {
+  return {
+    showcaseReady: Boolean(showcase?.vehicle),
+    vehicleName: showcase?.vehicle?.name || null,
+    vehicleMeshCount: showcase?.vehicleMeshCount || 0
+  };
+}
 let THREE, OrbitControls, RoomEnvironment, clock;
 
 const $ = id => document.getElementById(id);
