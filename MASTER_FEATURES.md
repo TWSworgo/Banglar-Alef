@@ -18,10 +18,11 @@
 - [x] Pause, resume and restart controls.
 - [x] Completion-state screen and credits route foundation.
 - [x] Loading screen waits for actual document assets and fonts; no fabricated progress milestones.
-- [ ] Full browser acceptance and deployment verification for this feature.
-- [ ] Later gameplay systems must use this shared state rather than independent/demo values.
+- [x] Full browser acceptance and deployment verification for the foundation.
 
-**Implementation:** `game-core.js`, `game.js`, `game.html`, `app.js`, `index.html`. Save key: `banglar-alef.game-save.v1`. Unit tests: `.github/scripts/game-core.test.mjs`. Browser acceptance: `.github/scripts/game-browser-test.mjs`.
+**Integration contract:** all later gameplay systems must read/write this shared state; their own feature-level integration remains part of those features’ acceptance tests.
+
+**Implementation:** `game-core.js`, `game.js`, `game.html`, `app.js`, `index.html`. Save key: `banglar-alef.game-save.v1`. Unit tests: `.github/scripts/game-core.test.mjs` (passed). Browser acceptance: `.github/scripts/game-browser-test.mjs` (passed in GitHub Actions run `43238971196`). GitHub Pages deployment for commit `c04bbb3fa2c97d3498f0a6bf3155ccd2bb346d48` succeeded.
 
 ## Feature 02 — Main Menu & User Interface
 - Cinematic main menu, New Game, Continue, Garage, Map, Settings, Controls, Statistics, Credits and Exit.
