@@ -67,6 +67,7 @@ function init(){
   // The showcase vehicle faces +Z. Travel initially heads toward -Z.
   vehicle.rotation.y=Math.PI;
   addTraffic();
+  addPassenger();
   clock=new THREE.Clock();
   addEvents();
   window.addEventListener("resize",resize);
