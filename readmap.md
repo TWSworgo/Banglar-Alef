@@ -55,20 +55,24 @@
 
 **Implementation record — 2026-11-12**
 
-- Graphics Engine Lab যুক্ত হয়েছে: `engine.html`, `engine.css`, `engine.js`।
-- Three.js WebGL 2 renderer, ACES tone mapping, shadow mapping ও PMREM environment lighting যুক্ত।
-- Asphalt-এর procedural color, roughness ও normal texture; metal, glass, painted ও concrete PBR material যুক্ত।
-- Day / sunset / night lighting preset এবং clear / rain / dust weather controls যুক্ত।
-- Animated water surface, rain ও dust particle systems যুক্ত।
-- Orbit camera, responsive resize, LOD switching, frustum culling, adaptive render scale এবং FPS / draw-call / triangle telemetry যুক্ত।
-- WebGL failure handling, retry এবং scene resource cleanup যুক্ত।
-- Asphalt-এর procedural tangent-space normal map যোগ করা হয়েছে; এটি color ও roughness map-এর সঙ্গে PBR material-এ ব্যবহৃত হচ্ছে।
-- Playwright-ভিত্তিক headless browser acceptance test যোগ করা হয়েছে: desktop ও mobile viewport-এ WebGL 2 startup, canvas visibility, FPS/draw-call/triangle telemetry, lighting/weather controls এবং camera reset পরীক্ষা করে।
-- GitHub Actions workflow-এ source validation ও browser acceptance আলাদা job। 2026-11-12-এর run `43211640032`-এ দুই job-ই সফল: JavaScript/HTML contract এবং Chromium headless-এ desktop ও mobile viewport WebGL startup, controls ও telemetry checks।
-- Headless CI-এর SwiftShader ফল বাস্তব Android/Desktop GPU benchmark নয়; তাই FPS/thermal/memory performance-এর device acceptance এখনো বাকি।
+- Graphics Engine Lab: `engine.html`, `engine.css`, `engine.js`।
+- Three.js WebGL 2 renderer, ACES tone mapping, PCF soft shadows এবং PMREM environment lighting।
+- Procedural 1024px/512px device-tier asphalt color, roughness ও tangent-space normal maps; metal, glass, painted ও concrete PBR materials।
+- Day / sunset / night lighting এবং clear / rain / dust weather-কে independent state হিসেবে compose করা হয়েছে; একটির পরিবর্তনে অন্যটির lighting override হয় না।
+- Dynamic water surface, rain ও dust particle systems; OrbitControls, responsive resize এবং distance-based LOD।
+- Three.js frustum culling-এর পাশাপাশি tagged opaque occluder-এর জন্য bounded CPU raycast occlusion culler; per-frame ray budget আছে।
+- Reusable `engine-systems.js`: SpatialHash3D broadphase, exact AABB overlap filtering, CollisionWorld collider registry, OcclusionCuller এবং ResourceTracker।
+- Engine scene-এর static ground/road/sidewalk/plinth colliders CollisionWorld-এ নিবন্ধিত; current scene-এ broadphase pair telemetry দেখা যায়।
+- Hardware-aware rendering budget: device memory ও mobile viewport অনুসারে pixel ratio, shadow-map size, texture resolution, anisotropy এবং antialiasing নির্বাচন।
+- GPU texture memory-এর আনুমানিক হিসাব, FPS/frame-time/draw-call/triangle, occlusion ও collision-pair telemetry।
+- Shared geometry/material/texture একবার dispose করার ResourceTracker; tab hidden হলে render loop pause এবং visible হলে resume।
+- WebGL failure/context loss message ও renderer retry flow।
+- Node unit tests: spatial hash query/update/remove, duplicate-free collision pairs, resource disposal এবং texture-memory estimates — **৬টি test passed**।
+- Playwright Chromium acceptance: desktop ও mobile viewport-এ WebGL 2 initialization, canvas visibility, lighting/weather preset composition, camera reset এবং telemetry — **passed**।
+- GitHub Actions run `43213260721`: source validation, subsystem unit tests এবং browser acceptance — **সব job passed**।
+- CI-এর SwiftShader/virtual viewport ফল real Android/Desktop GPU benchmark নয়; displayed GPU texture memory estimate-ও full driver VRAM measurement নয়।
 
-**এখনো অসম্পূর্ণ:** production-grade real-world asset pipeline ও high-resolution authored textures, সম্পূর্ণ occlusion culling, game-wide collision integration, low-memory GPU profiling এবং Android/Desktop browser acceptance testing। তাই এই Feature 02 এখনো 100% Complete নয়।
-
+**Feature 02-তে এখনও যেসব কাজ অন্য বাস্তব scope-এর সঙ্গে যুক্ত:** সম্পূর্ণ গেমের real-world GLTF/texture asset library ও streaming (Feature 03/04-এর actual assets আসার পর), dynamic gameplay collision response (Feature 11), এবং বাস্তব Android/Desktop hardware-এর sustained FPS, thermal ও battery acceptance। এগুলোকে এই Engine Lab-এর static checks দিয়ে সম্পন্ন বলে দাবি করা হচ্ছে না।
 ## ৩. বাস্তব ঢাকা শহর — Open World
 
 - [ ] OpenStreetMap ভিত্তিক বাস্তব Road Network।
