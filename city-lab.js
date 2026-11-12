@@ -81,7 +81,7 @@ async function loadCity() {
     $("buildings").textContent = built.counts.buildings.toLocaleString();
     $("map-source").textContent = result.endpoint === "CI fixture" ? "TEST FIXTURE" : "OPENSTREETMAP";
     $("coverage").textContent = "UTTARA · " + built.counts.omittedBuildings + " OMITTED";
-    status.textContent = "লোড সম্পন্ন — " + built.counts.roadWays + " road ways, " + built.counts.buildings + " buildings";
+    status.textContent = "লোড সম্পন্ন — " + built.counts.roadWays + " road ways, " + built.counts.buildings + " buildings, " + built.counts.facadeWindows + " facade windows, " + built.counts.roadMarkings + " lane markings";
     controls.target.set(0,0,0);
     camera.position.set(0,Math.max(450,Math.min(1150,900)),Math.max(500,Math.min(1200,1000)));
     controls.update();
