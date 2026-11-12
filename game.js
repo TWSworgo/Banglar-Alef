@@ -50,8 +50,18 @@ for(let gx=-GRID;gx<GRID;gx++)for(let gz=-GRID;gz<GRID;gz++){
   const crown=new THREE.Mesh(new THREE.SphereGeometry(1.9,8,7),mat(0x3e6943));crown.position.set(x,4,z);crown.castShadow=true;city.add(crown);
  }
 }
-// landmark market and station signs
-for(let i=-GRID;i<=GRID;i+=2){let x=i*STEP;const sign=box(city,x,3,-HALF+5,8,1,.25,M.yellow,false);sign.position.y=3;}
+// Street-front shop boards and Bengali wayfinding signs
+function signTexture(label,bg){
+ const c=document.createElement("canvas");c.width=512;c.height=128;const x=c.getContext("2d");
+ x.fillStyle=bg;x.fillRect(0,0,512,128);x.strokeStyle="#f4dfaa";x.lineWidth=8;x.strokeRect(5,5,502,118);
+ x.fillStyle="#fff8e7";x.font="bold 62px sans-serif";x.textAlign="center";x.textBaseline="middle";x.fillText(label,256,66);
+ const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;return new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide});
+}
+const shopBoards=["চা-স্টল","মুদি দোকান","গ্যারেজ","ঢাকা শহর","হোটেল"];
+for(let i=-GRID;i<=GRID;i+=2){
+ const x=i*STEP;const board=box(city,x,3,-HALF+5,8,1,.22,signTexture(shopBoards[(i+GRID)%shopBoards.length],"#8d3024"),false);
+ board.position.y=3;
+}
 // Selected major intersections: pedestrian crossings and working traffic signals
 const signalPosts=[];
 const signalRed=new THREE.MeshStandardMaterial({color:0x5a1714,emissive:0x260000});
@@ -115,11 +125,16 @@ function makePerson(color){
 const player=makeCng();scene.add(player);player.position.set(0,0,0);
 const traffic=[];
 const colors=[0x245a85,0xc8a044,0x9b3c32,0x47765b,0xd6d0c4,0x6b536f];
-for(let i=0;i<38;i++){
- const car=makeCar(colors[i%colors.length]);let axis=Math.random()<.5?"x":"z",lane=Math.random()<.5?-2.3:2.3,dir=Math.random()<.5?-1:1,line=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP;
+for(let i=0;i<42;i++){
+ let car,kind="car";
+ if(i%8===0){car=makeCar(0xc4c1b8);car.scale.set(1.32,1.18,1.72);box(car,0,1.65,-.2,1.8,.72,2.65,mat(0xd6d0c4),false);kind="bus"}
+ else if(i%8===1){car=makeCar(0x9a6b43);car.scale.set(1.22,1.12,1.45);box(car,0,1.62,-.15,1.85,.95,2.3,mat(0x9b8064),false);kind="truck"}
+ else if(i%8===2){car=makeCng();car.scale.set(.78,.78,.78);kind="cng"}
+ else{car=makeCar(colors[i%colors.length]);if(i%8===3){car.scale.set(.82,.8,.88);kind="microcar"}}
+ let axis=Math.random()<.5?"x":"z",lane=Math.random()<.5?-2.3:2.3,dir=Math.random()<.5?-1:1,line=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP;
  car.position.set(axis==="x"?Math.random()*GRID*STEP-HALF:line,0,axis==="z"?Math.random()*GRID*STEP-HALF:line);if(Math.hypot(car.position.x,car.position.z)<24)car.position[axis==="x"?"x":"z"]+=dir*28;
  car.rotation.y=axis==="x"?(dir>0?Math.PI/2:-Math.PI/2):(dir>0?0:Math.PI);
- scene.add(car);traffic.push({mesh:car,axis,lane,dir,line,speed:4+Math.random()*7,base:4+Math.random()*8});
+ scene.add(car);traffic.push({mesh:car,kind,axis,lane,dir,line,speed:4+Math.random()*7,base:4+Math.random()*8});
 }
 const people=[];
 for(let i=0;i<64;i++){
@@ -143,8 +158,17 @@ addEventListener("keydown",e=>{keys[e.key.toLowerCase()]=true;if(["ArrowUp","Arr
 addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 document.querySelectorAll("[data-control]").forEach(b=>{const k=b.dataset.control;const down=e=>{e.preventDefault();controls[k]=true};const up=e=>{e.preventDefault();controls[k]=false};b.addEventListener("pointerdown",down);b.addEventListener("pointerup",up);b.addEventListener("pointercancel",up);b.addEventListener("pointerleave",up)});
 function toast(s){ui.toast.textContent=s;ui.toast.classList.add("show");state.toastTimer=2.4}
-function horn(){if(!state.running||state.paused||state.over||state.hornCooldown>0)return;state.hornCooldown=1.1;toast("পোঁ পোঁ! পথ ছাড়ুন!");for(const p of people){const d=Math.hypot(p.mesh.position.x-player.position.x,p.mesh.position.z-player.position.z);if(d<12)p.dir=Math.sign(p.mesh.position[p.axis==="x"?"x":"z"]-(p.axis==="x"?player.position.x:player.position.z))||p.dir}}
-function soundBomb(){if(!state.running||state.paused||state.over||state.bombCooldown>0)return;state.bombCooldown=9;state.battery=Math.max(0,state.battery-7);state.anger=Math.max(0,state.anger-34);for(const c of chasers){c.stun=3.5;c.mesh.position.x+= (c.mesh.position.x-player.position.x)*.9;c.mesh.position.z+=(c.mesh.position.z-player.position.z)*.9}toast("শব্দবোমা! জনতা ছত্রভঙ্গ — চার্জ −৭%")}
+let audioCtx=null;
+function tone(freq,duration=.12,type="square",gain=.035){
+ try{audioCtx??=new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==="suspended")audioCtx.resume();
+ const osc=audioCtx.createOscillator(),vol=audioCtx.createGain();osc.type=type;osc.frequency.value=freq;vol.gain.setValueAtTime(gain,audioCtx.currentTime);vol.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+duration);osc.connect(vol);vol.connect(audioCtx.destination);osc.start();osc.stop(audioCtx.currentTime+duration);
+ }catch{}
+}
+function hornSound(){tone(360,.22,"sawtooth",.045);tone(440,.22,"square",.025)}
+function impactSound(){tone(95,.16,"triangle",.06);tone(62,.2,"sawtooth",.035)}
+
+function horn(){if(!state.running||state.paused||state.over||state.hornCooldown>0)return;state.hornCooldown=1.1;hornSound();toast("পোঁ পোঁ! পথ ছাড়ুন!");for(const p of people){const d=Math.hypot(p.mesh.position.x-player.position.x,p.mesh.position.z-player.position.z);if(d<12)p.dir=Math.sign(p.mesh.position[p.axis==="x"?"x":"z"]-(p.axis==="x"?player.position.x:player.position.z))||p.dir}}
+function soundBomb(){if(!state.running||state.paused||state.over||state.bombCooldown>0)return;state.bombCooldown=9;tone(70,.45,"sawtooth",.08);tone(110,.35,"triangle",.06);state.battery=Math.max(0,state.battery-7);state.anger=Math.max(0,state.anger-34);for(const c of chasers){c.stun=3.5;c.mesh.position.x+= (c.mesh.position.x-player.position.x)*.9;c.mesh.position.z+=(c.mesh.position.z-player.position.z)*.9}toast("শব্দবোমা! জনতা ছত্রভঙ্গ — চার্জ −৭%")}
 function cycleCamera(){cameraMode=(cameraMode+1)%cameraOffsets.length;toast(["পেছনের ক্যামেরা","ড্রাইভার ভিউ","উপরের ক্যামেরা"][cameraMode])}
 ui.horn.onclick=horn;ui.bomb.onclick=soundBomb;ui.camera.onclick=cycleCamera;
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
@@ -159,7 +183,7 @@ function registerImpact(kind,amount){
  const now=performance.now();if(state.collisionCooldown>0)return;state.collisionCooldown=.62;state.crashes++;
  state.comboTimer=4.5;state.combo=Math.min(8,state.combo+1);
  const gain=Math.round(amount*state.combo);state.loss+=gain;state.anger=clamp(state.anger+(kind==="pedestrian"?24:14),0,100);state.shake=.35;
- state.speed*=kind==="pedestrian"?.18:.34;toast((kind==="pedestrian"?"পথচারীর সঙ্গে ধাক্কা! ":"গাড়িতে ধাক্কা! ")+"জাতীয় ক্ষতি +৳"+gain);
+ state.speed*=kind==="pedestrian"?.18:.34;impactSound();toast((kind==="pedestrian"?"পথচারীর সঙ্গে ধাক্কা! ":"গাড়িতে ধাক্কা! ")+"জাতীয় ক্ষতি +৳"+gain);
  if(state.anger>=22&&chasers.length<Math.ceil(state.anger/12))spawnChaser();
 }
 function updatePlayer(dt){
