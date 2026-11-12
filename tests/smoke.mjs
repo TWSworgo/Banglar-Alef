@@ -15,7 +15,7 @@ try {
   assert.equal(response.status(), 200);
   try { await page.waitForFunction(() => window.__GAME_READY__ === true, null, { timeout: 15000 }); }
   catch (error) { console.log("RUNTIME DIAGNOSTICS", JSON.stringify({ errors, consoleErrors, failedRequests })); throw error; }
-  for (const selector of ["#score", "#battery", "#best", "#accidents", "#mission", "#map", "#start", "#pause", "#horn", "#camera", "#quality", "#soundToggle"]) {
+  for (const selector of ["#score", "#speed", "#battery", "#best", "#accidents", "#mission", "#map", "#start", "#pause", "#horn", "#camera", "#quality", "#soundToggle"]) {
     assert.equal(await page.locator(selector).count(), 1, selector + " should exist");
   }
   await page.locator("#start").click();
