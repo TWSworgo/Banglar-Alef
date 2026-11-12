@@ -20,6 +20,7 @@ on:
       - "engine.js"
       - "engine-systems.js"
       - "engine-assets.js"
+      - "engine-showcase.js"
       - ".github/scripts/engine-systems.test.mjs"
       - ".github/scripts/engine-assets.test.mjs"
       - "engine.html"
