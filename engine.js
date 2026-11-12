@@ -1,5 +1,6 @@
 import { CollisionWorld, OcclusionCuller, ResourceTracker, estimateTextureMemoryBytes } from './engine-systems.js';
 import { createThreeAssetPipeline } from './engine-assets.js';
+import { buildDhakaShowcase } from './engine-showcase.js';
 
 export let assetPipeline = null;
 let THREE, OrbitControls, RoomEnvironment, clock;
