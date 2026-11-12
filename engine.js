@@ -20,7 +20,7 @@ function webglAvailable() {
 }
 
 function makeAsphaltMaps() {
-  const size = 512;
+  const size = 1024;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext("2d", { alpha: false });
@@ -432,6 +432,7 @@ function setLightingPreset(value) {
 function setWeather(value) {
   if (!lights) return;
   lights.rain.visible = value === "rain";
+  lights.dust.visible = value === "dust";
   if (value === "rain") {
     scene.fog.near = 28;
     scene.fog.far = 145;
