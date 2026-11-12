@@ -51,7 +51,8 @@ async function verifyViewport(name, options = {}) {
     return fps && fps !== "—" && assets && assets !== "INITIALIZING";
   }, { timeout: 30000 });
   const assetStatus = await page.locator("#asset-pipeline-status").textContent();
-  if (!assetStatus?.includes("READY")) failures.push(name + ": compressed glTF asset pipeline did not initialize");
+  console.log(name + " asset pipeline: " + assetStatus);
+  if (!assetStatus?.includes("READY")) failures.push(name + ": glTF asset pipeline did not initialize");
 
   const gltfBuffer = Buffer.alloc(42);
   const vertexValues = [-1, 0, 0, 1, 0, 0, 0, 1, 0];
@@ -76,6 +77,7 @@ async function verifyViewport(name, options = {}) {
   const gltfDataUrl = "data:model/gltf+json;base64," + Buffer.from(JSON.stringify(gltfFixture)).toString("base64");
   const loadedAsset = await page.evaluate(async dataUrl => {
     const module = await import("./engine.js");
+    if (!module.assetPipeline) return { count: 0, boundsReady: false };
     const asset = await module.assetPipeline.loadGLTF(dataUrl);
     const meshes = [];
     asset.scene.traverse(object => { if (object.isMesh) meshes.push(object); });
