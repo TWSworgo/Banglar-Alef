@@ -6,7 +6,9 @@ on:
     paths:
       - "engine.js"
       - "engine-systems.js"
+      - "engine-assets.js"
       - ".github/scripts/engine-systems.test.mjs"
+      - ".github/scripts/engine-assets.test.mjs"
       - "engine.html"
       - "engine.css"
       - ".github/scripts/engine-browser-test.mjs"
@@ -16,7 +18,9 @@ on:
     paths:
       - "engine.js"
       - "engine-systems.js"
+      - "engine-assets.js"
       - ".github/scripts/engine-systems.test.mjs"
+      - ".github/scripts/engine-assets.test.mjs"
       - "engine.html"
       - "engine.css"
       - ".github/scripts/engine-browser-test.mjs"
@@ -36,18 +40,20 @@ jobs:
         run: node --check engine.js
       - name: Validate engine systems module syntax
         run: node --check engine-systems.js
+      - name: Validate asset pipeline module syntax
+        run: node --check engine-assets.js
       - name: Validate browser test syntax
         run: node --check .github/scripts/engine-browser-test.mjs
       - name: Run engine systems unit tests
-        run: node --test .github/scripts/engine-systems.test.mjs
+        run: node --test .github/scripts/engine-systems.test.mjs .github/scripts/engine-assets.test.mjs
       - name: Validate engine page contract
         run: |
           node --input-type=module <<'NODE'
           import { readFileSync } from 'node:fs';
           const html = readFileSync('engine.html', 'utf8');
           const js = readFileSync('engine.js', 'utf8');
-          const requiredHtml = ['id="viewport"', 'id="time-of-day"', 'id="weather-mode"', 'id="reset-camera"', 'id="retry-renderer"', 'id="gpu-memory"', 'id="occlusion-count"', 'id="collision-pairs"'];
-          const requiredJs = ['WebGLRenderer', 'ACESFilmicToneMapping', 'PMREMGenerator', 'OrbitControls', 'OcclusionCuller', 'CollisionWorld', 'ResourceTracker', 'function applyVisualPresets', 'function animate'];
+          const requiredHtml = ['id="viewport"', 'id="time-of-day"', 'id="weather-mode"', 'id="reset-camera"', 'id="retry-renderer"', 'id="gpu-memory"', 'id="occlusion-count"', 'id="collision-pairs"', 'id="asset-pipeline-status"'];
+          const requiredJs = ['WebGLRenderer', 'ACESFilmicToneMapping', 'PMREMGenerator', 'OrbitControls', 'OcclusionCuller', 'CollisionWorld', 'ResourceTracker', 'createThreeAssetPipeline', 'function applyVisualPresets', 'function animate'];
           for (const token of requiredHtml) {
             if (!html.includes(token)) throw new Error('Missing HTML contract: ' + token);
           }
