@@ -19,10 +19,11 @@ try {
     assert.equal(await page.locator(selector).count(), 1, selector + " should exist");
   }
   await page.locator("#start").click();
+  const scoreBeforeRide = await page.evaluate(() => window.__GAME_STATE__.score);
   assert.equal(await page.evaluate(() => window.__GAME_TEST__.pickup()), true, "passenger pickup should activate");
   assert.equal(await page.locator("#mission").textContent(), "যাত্রীকে গন্তব্যে পৌঁছান");
   assert.equal(await page.evaluate(() => window.__GAME_TEST__.dropoff()), true, "safe passenger dropoff should award score");
-  assert.equal(await page.evaluate(() => window.__GAME_STATE__.score), 100);
+  assert.equal(await page.evaluate(() => window.__GAME_STATE__.score - scoreBeforeRide), 100);
   await page.keyboard.down("w");
   await page.waitForTimeout(650);
   await page.keyboard.up("w");
