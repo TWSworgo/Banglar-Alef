@@ -31,14 +31,17 @@
   <button id="start">চালানো শুরু করুন</button>
   <div class="menu-note">কম্পিউটার: WASD / Arrow · H হর্ন · X শব্দবোমা · C ক্যামেরা · P বিরতি<br>মোবাইল: স্ক্রিনের কন্ট্রোল ব্যবহার করুন</div>
  </div></section>
- <section id="pausePanel" class="screen hidden"><div class="panel"><h2>খেলা বিরতি</h2><button id="resume">চালিয়ে যান</button><button id="restart">নতুন করে শুরু</button></div></section>
+ <section id="pausePanel" class="screen hidden"><div class="panel"><h2>খেলা বিরতি</h2>
+  <div class="settings-row"><label for="quality">গ্রাফিক্সের মান</label><select id="quality"><option value="high">High · ছায়াসহ</option><option value="medium">Medium</option><option value="low">Low · দ্রুত</option></select></div>
+  <button id="soundToggle" class="secondary">শব্দ: চালু</button><p class="help-copy">চালান: W / ↑ · ব্রেক: S / ↓ · স্টিয়ার: A D / ← →<br>টান: Shift · লাফ: Space · হর্ন: H · শব্দবোমা: B · ক্যামেরা: C</p>
+  <button id="resume">চালিয়ে যান</button><button id="restart">নতুন করে শুরু</button></div></section>
  <section id="endPanel" class="screen hidden"><div class="panel"><div class="eyebrow">RUN OVER</div><h2 id="endTitle">জনতা ধরে ফেলেছে!</h2><p id="endText">আপনার যাত্রা শেষ।</p>
   <div class="final-scores"><div><small>জাতীয় ক্ষতি</small><b id="finalLoss">৳০</b></div><div><small>সেরা স্কোর</small><b id="finalBest">৳০</b></div><div><small>ধাক্কা</small><b id="finalCrashes">০</b></div></div>
   <button id="again">আবার খেলুন</button>
  </div></section>
  <div class="controls">
   <div class="left-controls"><div class="steer"><button data-control="left">◀</button><button data-control="right">▶</button></div>
-   <div class="utility"><button id="horn">হর্ন</button><button id="bomb">শব্দবোমা</button><button id="camera">ক্যামেরা</button></div>
+   <div class="utility"><button id="horn">হর্ন</button><button id="bomb">শব্দবোমা</button><button id="jump">লাফ</button><button id="camera">ক্যামেরা</button></div>
   </div>
   <div class="right-controls"><button data-control="brake" class="brake">ব্রেক</button><button data-control="boost" class="boost">টান</button><button data-control="throttle" class="gas">চালান</button></div>
  </div>
