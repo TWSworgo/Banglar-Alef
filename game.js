@@ -210,4 +210,4 @@ let last=performance.now(),frame=0;
 function loop(now){requestAnimationFrame(loop);const dt=Math.min(.04,(now-last)/1000||0);last=now;if(state.running&&!state.paused){updatePlayer(dt);updateTraffic(dt);updatePeople(dt);updateMissions(dt);state.time=(state.time+dt*.015)%24;ui.clock.textContent=String(Math.floor(state.time)).padStart(2,"0")+":"+String(Math.floor((state.time%1)*60)).padStart(2,"0");if(state.toastTimer>0){state.toastTimer-=dt;if(state.toastTimer<=0)ui.toast.classList.remove("show")}if(state.battery<=0&&state.speed>8)state.speed=8;updateHud();if(++frame%8===0)drawMap()}updateCamera(dt);renderer.render(scene,camera)}
 requestAnimationFrame(loop);
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.7))});
-camera.position.set(0,8,-12);camera.lookAt(0,1,5);setMission();drawMap();updateHud();
+camera.position.set(0,8,-12);camera.lookAt(0,1,5);setMission();drawMap();updateHud();window.__GAME_READY__=true;
