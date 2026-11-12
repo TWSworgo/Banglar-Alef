@@ -54,3 +54,10 @@ test("texture memory estimate accounts for mipmaps and deduplicates textures", (
   const texture = { image: { width: 256, height: 128 }, generateMipmaps: true };
   assert.equal(estimateTextureMemoryBytes([texture, texture]), Math.round(256 * 128 * 4 * 4 / 3));
 });
+
+test("texture memory estimate distinguishes single-channel and RGBA formats", () => {
+  const image = { width: 16, height: 16 };
+  const red = { image, format: 1028, generateMipmaps: false };
+  const rgba = { image, format: 1023, generateMipmaps: false };
+  assert.equal(estimateTextureMemoryBytes([red, rgba]), 16 * 16 * 5);
+});
