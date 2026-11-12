@@ -44,8 +44,8 @@ jobs:
           import { readFileSync } from 'node:fs';
           const html = readFileSync('engine.html', 'utf8');
           const js = readFileSync('engine.js', 'utf8');
-          const requiredHtml = ['id="viewport"', 'id="time-of-day"', 'id="weather-mode"', 'id="reset-camera"', 'id="retry-renderer"'];
-          const requiredJs = ['WebGLRenderer', 'ACESFilmicToneMapping', 'PMREMGenerator', 'OrbitControls', 'function setWeather', 'function animate'];
+          const requiredHtml = ['id="viewport"', 'id="time-of-day"', 'id="weather-mode"', 'id="reset-camera"', 'id="retry-renderer"', 'id="gpu-memory"', 'id="occlusion-count"', 'id="collision-pairs"'];
+          const requiredJs = ['WebGLRenderer', 'ACESFilmicToneMapping', 'PMREMGenerator', 'OrbitControls', 'OcclusionCuller', 'CollisionWorld', 'ResourceTracker', 'function applyVisualPresets', 'function animate'];
           for (const token of requiredHtml) {
             if (!html.includes(token)) throw new Error('Missing HTML contract: ' + token);
           }
