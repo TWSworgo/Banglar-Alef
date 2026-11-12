@@ -322,4 +322,10 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5))});
-camera.position.set(0,8,-12);camera.lookAt(0,1,5);setMission();drawMap();updateHud();window.__GAME_STATE__=state;window.__GAME_READY__=true;
+camera.position.set(0,8,-12);camera.lookAt(0,1,5);setMission();drawMap();updateHud();window.__GAME_STATE__=state;window.__GAME_READY__=true;if(new URLSearchParams(location.search).has("test")){
+ window.__GAME_TEST__={
+  pickup(){const p=pickups.find(x=>x.active);if(!p)return false;player.position.set(p.x,0,p.z);state.speed=0;updateMissions(.016);return state.passenger},
+  dropoff(){if(!state.passenger)return false;player.position.set(destination.position.x,0,destination.position.z);state.speed=0;updateMissions(.016);return !state.passenger&&state.score>=100}
+ };
+}
+
