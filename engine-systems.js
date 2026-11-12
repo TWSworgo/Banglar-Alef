@@ -162,6 +162,7 @@ export class OcclusionCuller {
     if (this.frame % this.intervalFrames !== 0 || this.occluders.length === 0) return;
     const THREE = this.THREE;
     this.camera.updateMatrixWorld();
+    for (const occluder of this.occluders) occluder.updateWorldMatrix(true, true);
     this.projectionView.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
     this.frustum.setFromProjectionMatrix(this.projectionView);
     let rays = 0, hidden = 0;
