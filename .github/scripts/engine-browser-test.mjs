@@ -78,8 +78,8 @@ async function verifyViewport(name, options = {}) {
     collisionPairs: document.querySelector("#collision-pairs")?.textContent
   }));
   if (!metrics.fps || metrics.fps === "—") failures.push(name + ": FPS telemetry missing");
-  if (!metrics.calls || metrics.calls === "—") failures.push(name + ": draw-call telemetry missing");
-  if (!metrics.triangles || metrics.triangles === "—") failures.push(name + ": triangle telemetry missing");
+  if (!metrics.calls || metrics.calls === "—" || Number(metrics.calls) <= 0) failures.push(name + ": no draw calls were submitted");
+  if (!metrics.triangles || metrics.triangles === "—" || Number(metrics.triangles.replaceAll(",", "")) <= 0) failures.push(name + ": no triangles were rendered");
   if (!metrics.memory || metrics.memory === "—") failures.push(name + ": GPU texture memory estimate missing");
   if (metrics.occluded === undefined) failures.push(name + ": occlusion telemetry missing");
   if (metrics.collisionPairs === undefined) failures.push(name + ": collision broadphase telemetry missing");
