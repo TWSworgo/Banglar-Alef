@@ -11,12 +11,12 @@ page.on("pageerror", error => errors.push(error.message));
 try {
   const response = await page.goto("http://127.0.0.1:4173", { waitUntil: "networkidle", timeout: 45000 });
   assert.equal(response.status(), 200, "game page should load");
-  await page.waitForFunction(() => window.__GAME_READY__ === true, { timeout: 30000 });
+  await page.waitForFunction(() => window.__GAME_READY__ === true, null, { timeout: 30000 });
   assert.equal(await page.locator("#view").count(), 1);
   await page.locator("#start").click();
   await page.waitForFunction(() => document.querySelector("#overlay").classList.contains("hidden"));
   await page.keyboard.down("w");
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(350);
   await page.keyboard.up("w");
   const speed = await page.locator("#speed").textContent();
   assert.ok(Number(speed.replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d))) > 0, "vehicle should accelerate when W is held");
