@@ -1,3 +1,5 @@
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
 // Procedural Dhaka street and Banglar Alef three-wheeler showcase.
 // Geometry is intentionally lightweight and uses shared materials for mobile rendering.
 
@@ -40,6 +42,58 @@ function rod(THREE, parent, start, end, radius, material, segments = 8) {
   mesh.castShadow = true;
   parent.add(mesh);
   return mesh;
+}
+
+
+function mergeStaticMeshes(THREE, group, excluded = null) {
+  group.updateMatrixWorld(true);
+  const batches = new Map();
+  const originals = [];
+
+  function visit(object) {
+    if (object === excluded) return;
+    if (object.isMesh && object.geometry && !object.isInstancedMesh) {
+      const material = object.material;
+      if (!batches.has(material)) batches.set(material, { geometries: [], meshes: [], collider: false, castShadow: false, receiveShadow: false });
+      const batch = batches.get(material);
+      const geometry = object.geometry.clone();
+      const relative = new THREE.Matrix4().copy(group.matrixWorld).invert().multiply(object.matrixWorld);
+      geometry.applyMatrix4(relative);
+      batch.geometries.push(geometry);
+      batch.meshes.push(object);
+      batch.collider ||= Boolean(object.userData.collider);
+      batch.castShadow ||= object.castShadow;
+      batch.receiveShadow ||= object.receiveShadow;
+      originals.push(object);
+    }
+    for (const child of object.children) visit(child);
+  }
+
+  visit(group);
+  let mergedCount = 0;
+  for (const [material, batch] of batches) {
+    const merged = mergeGeometries(batch.geometries, false);
+    for (const geometry of batch.geometries) geometry.dispose();
+    if (!merged) continue;
+    const mesh = new THREE.Mesh(merged, material);
+    mesh.name = group.name + "-merged-" + (++mergedCount);
+    mesh.castShadow = batch.castShadow;
+    mesh.receiveShadow = batch.receiveShadow;
+    if (batch.collider) mesh.userData.collider = true;
+    mesh.geometry.computeBoundingBox();
+    mesh.geometry.computeBoundingSphere();
+    group.add(mesh);
+    for (const original of batch.meshes) original.removeFromParent();
+  }
+
+  const disposed = new Set();
+  for (const original of originals) {
+    if (!original.parent && original.geometry && !disposed.has(original.geometry)) {
+      disposed.add(original.geometry);
+      original.geometry.dispose();
+    }
+  }
+  return mergedCount;
 }
 
 function makePlateTexture(THREE) {
@@ -221,7 +275,9 @@ export function buildDhakaShowcase(THREE, scene, sourceMaterials) {
   box(THREE, body, [0.46, 0.08, 0.35], [0.72, 0.72, -0.25], chrome);
   body.position.set(0, 0, 0);
   body.userData.showcase = "procedural-three-wheel-CNG";
-  root.add(body);
+  const vehicleMeshCount = body.children.length;
+  mergeStaticMeshes(THREE, body);
+  mergeStaticMeshes(THREE, root, body);
   scene.add(root);
-  return { root, vehicle: body, vehicleMeshCount: body.children.length };
+  return { root, vehicle: body, vehicleMeshCount };
 }
