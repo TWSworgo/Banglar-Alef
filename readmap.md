@@ -53,6 +53,19 @@
 
 **গ্রহণযোগ্যতার শর্ত:** গাড়ি, মানুষ, রাস্তা, ভবন ও অন্যান্য বস্তু বাস্তব জগতের তুলনামূলক মাপ বজায় রাখবে। কোনো Low-poly বা খেলনা-ধাঁচের পরিবেশ থাকবে না।
 
+**Implementation record — 2026-11-12**
+
+- Graphics Engine Lab যুক্ত হয়েছে: `engine.html`, `engine.css`, `engine.js`।
+- Three.js WebGL 2 renderer, ACES tone mapping, shadow mapping ও PMREM environment lighting যুক্ত।
+- Asphalt-এর procedural color, roughness ও normal texture; metal, glass, painted ও concrete PBR material যুক্ত।
+- Day / sunset / night lighting preset এবং clear / rain / dust weather controls যুক্ত।
+- Animated water surface, rain ও dust particle systems যুক্ত।
+- Orbit camera, responsive resize, LOD switching, frustum culling, adaptive render scale এবং FPS / draw-call / triangle telemetry যুক্ত।
+- WebGL failure handling, retry এবং scene resource cleanup যুক্ত।
+- GitHub Actions source-validation workflow যোগ করা হয়েছে; এই মুহূর্তে workflow run-এর সফল ফল নিশ্চিত করা যায়নি।
+
+**এখনো অসম্পূর্ণ:** production-grade real-world asset pipeline ও high-resolution authored textures, সম্পূর্ণ occlusion culling, game-wide collision integration, low-memory GPU profiling এবং Android/Desktop browser acceptance testing। তাই এই Feature 02 এখনো 100% Complete নয়।
+
 ## ৩. বাস্তব ঢাকা শহর — Open World
 
 - [ ] OpenStreetMap ভিত্তিক বাস্তব Road Network।
