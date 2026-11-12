@@ -52,13 +52,46 @@ function makeAsphaltMaps() {
   const roughnessMap = new THREE.CanvasTexture(roughCanvas);
   roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
   roughnessMap.repeat.set(3, 3);
-  return { map, roughnessMap };
+
+  // Derive a tangent-space normal map from the deterministic asphalt height detail.
+  const source = ctx.getImageData(0, 0, size, size).data;
+  const normalCanvas = document.createElement("canvas");
+  normalCanvas.width = normalCanvas.height = size;
+  const normalCtx = normalCanvas.getContext("2d", { alpha: false });
+  const normalImage = normalCtx.createImageData(size, size);
+  const strength = 2.4;
+  for (let y = 0; y < size; y++) {
+    const up = ((y + size - 1) % size) * size;
+    const down = ((y + 1) % size) * size;
+    for (let x = 0; x < size; x++) {
+      const left = (y * size + (x + size - 1) % size) * 4;
+      const right = (y * size + (x + 1) % size) * 4;
+      const above = (up + x) * 4;
+      const below = (down + x) * 4;
+      const dx = (source[right] - source[left]) / 255 * strength;
+      const dy = (source[below] - source[above]) / 255 * strength;
+      let nx = -dx, ny = -dy, nz = 1;
+      const length = Math.hypot(nx, ny, nz) || 1;
+      nx /= length; ny /= length; nz /= length;
+      const offset = (y * size + x) * 4;
+      normalImage.data[offset] = Math.round((nx * 0.5 + 0.5) * 255);
+      normalImage.data[offset + 1] = Math.round((ny * 0.5 + 0.5) * 255);
+      normalImage.data[offset + 2] = Math.round((nz * 0.5 + 0.5) * 255);
+      normalImage.data[offset + 3] = 255;
+    }
+  }
+  normalCtx.putImageData(normalImage, 0, 0);
+  const normalMap = new THREE.CanvasTexture(normalCanvas);
+  normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
+  normalMap.repeat.set(3, 3);
+  normalMap.anisotropy = 4;
+  return { map, roughnessMap, normalMap };
 }
 
 function createMaterialSet() {
   const asphaltMaps = makeAsphaltMaps();
   return {
-    asphalt: new THREE.MeshStandardMaterial({ ...asphaltMaps, color: 0x777d78, roughness: 0.92, metalness: 0.02 }),
+    asphalt: new THREE.MeshStandardMaterial({ ...asphaltMaps, color: 0x777d78, roughness: 0.92, metalness: 0.02, normalScale: new THREE.Vector2(0.32, 0.32) }),
     concrete: new THREE.MeshStandardMaterial({ color: 0x9a9c91, roughness: 0.88, metalness: 0 }),
     painted: new THREE.MeshStandardMaterial({ color: 0x8fb46c, roughness: 0.34, metalness: 0.12 }),
     glass: new THREE.MeshPhysicalMaterial({ color: 0x8eb4b2, roughness: 0.08, metalness: 0.05, transmission: 0.12, transparent: true, opacity: 0.82, thickness: 0.25, ior: 1.45 }),
