@@ -120,12 +120,17 @@ function makePerson(){
 }
 const player=makeCng();scene.add(player);player.position.set(0,0,0);
 const traffic=[],trafficColors=[0x245a85,0xc8a044,0x9b3c32,0x47765b,0xd6d0c4,0x6b536f];
-for(let i=0;i<42;i++){
- let car,kind="car";
- if(i%8===0){car=makeCar(0xc4c1b8);car.scale.set(1.32,1.18,1.72);box(car,0,1.65,-.2,1.8,.72,2.65,mat(0xd6d0c4),false);kind="bus"}
- else if(i%8===1){car=makeCar(0x9a6b43);car.scale.set(1.22,1.12,1.45);box(car,0,1.62,-.15,1.85,.95,2.3,mat(0x9b8064),false);kind="truck"}
- else if(i%8===2){car=makeCng();car.scale.set(.78,.78,.78);kind="cng"}
- else{car=makeCar(trafficColors[i%trafficColors.length]);if(i%8===3){car.scale.set(.82,.8,.88);kind="microcar"}}
+for(let i=0;i<54;i++){
+ let car,kind="car";const variant=i%9;
+ if(variant===0){car=makeCar(0xc4c1b8);car.scale.set(1.32,1.18,1.72);box(car,0,1.65,-.2,1.8,.72,2.65,mat(0xd6d0c4),false);kind="bus"}
+ else if(variant===1){car=makeCar(0x9a6b43);car.scale.set(1.22,1.12,1.45);box(car,0,1.62,-.15,1.85,.95,2.3,mat(0x9b8064),false);kind="truck"}
+ else if(variant===2){car=makeCng();car.scale.set(.78,.78,.78);kind="cng"}
+ else if(variant===3){car=makeCar(0xd9d4c8);car.scale.set(.82,.8,.88);kind="microcar"}
+ else if(variant===4){car=makeCar(0x172c50);box(car,0,1.55,-.15,1.72,.18,2.1,mat(0x172c50),false);box(car,-.62,1.62,.55,.22,.12,.22,mat(0x182bff),false);box(car,.62,1.62,.55,.22,.12,.22,mat(0xb52626),false);kind="police"}
+ else if(variant===5){car=makeCar(0x668c72);car.scale.set(1.08,1.15,1.35);box(car,0,1.52,-.3,1.7,.75,2.3,mat(0x668c72),false);kind="van"}
+ else if(variant===6){car=makeCar(0x4a5159);car.scale.set(1.16,1.2,1.35);box(car,0,1.5,-.15,1.8,.55,1.9,M.glass,false);kind="suv"}
+ else if(variant===7){car=makeCar(0x242424);car.scale.set(1.12,1.05,1.3);kind="vip"}
+ else car=makeCar(trafficColors[i%trafficColors.length]);
  const axis=Math.random()<.5?"x":"z",dir=Math.random()<.5?-1:1,lane=dir>0?-2.3:2.3,line=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP;
  car.position.set(axis==="x"?Math.random()*GRID*STEP-HALF:line,0,axis==="z"?Math.random()*GRID*STEP-HALF:line);
  if(Math.hypot(car.position.x,car.position.z)<26)car.position[axis==="x"?"x":"z"]+=dir*32;
@@ -138,6 +143,18 @@ for(let i=0;i<58;i++){
  p.position.set(axis==="x"?Math.random()*GRID*STEP-HALF:line,0,axis==="z"?Math.random()*GRID*STEP-HALF:line);
  p.position[axis==="x"?"z":"x"]+=side*(ROAD/2+1.8);scene.add(p);
  people.push({mesh:p,axis,line,dir:Math.random()<.5?1:-1,speed:.55+Math.random()*.7,phase:Math.random()*6});
+}
+// Roadside tea stalls and hawker tables
+const stalls=[];
+for(let i=0;i<22;i++){
+ const axis=i%2===0?"x":"z",line=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP;
+ const along=(Math.random()*(GRID*2-2)-GRID+1)*STEP,side=Math.random()<.5?-1:1;
+ const x=axis==="x"?along:line+side*8.2,z=axis==="x"?line+side*8.2:along;
+ box(city,x,.8,z,2.4,.22,1.2,mat(0x8b5735),false);
+ box(city,x-1,.38,z,.14,.8,.14,M.black,false);box(city,x+1,.38,z,.14,.8,.14,M.black,false);
+ box(city,x,2.05,z,2.9,.18,1.8,mat(i%3===0?0xb83a32:i%3===1?0x2b7554:0xd5a63e),false);
+ const pot=new THREE.Mesh(new THREE.CylinderGeometry(.2,.24,.45,10),mat(0x6a4630));pot.position.set(x+.75,.34,z+.3);city.add(pot);
+ stalls.push({x,z});
 }
 const chargers=[];
 for(let i=0;i<9;i++){
