@@ -182,21 +182,16 @@
   }
 
   function startBoot() {
-    const milestones = [
-      [450, 18, "ব্র্যান্ডিং প্রস্তুত হচ্ছে"],
-      [1000, 42, "ইন্টারফেস লোড হচ্ছে"],
-      [1650, 68, "কন্ট্রোল ও সেটিংস প্রস্তুত হচ্ছে"],
-      [2250, 88, "শহরের জন্য প্রস্তুত"],
-      [2700, 96, "প্রায় প্রস্তুত"]
-    ];
-    milestones.forEach(([delay, value, message]) => {
-      window.setTimeout(() => setBootProgress(value, message), delay);
-    });
+    setBootProgress(0, "প্রয়োজনীয় সম্পদ লোড হচ্ছে");
     const assetsReady = document.readyState === "complete"
       ? Promise.resolve()
       : new Promise(resolve => window.addEventListener("load", resolve, { once: true }));
-    Promise.all([assetsReady, document.fonts ? document.fonts.ready.catch(() => {}) : Promise.resolve()])
-      .then(finishBoot)
+    const fontsReady = document.fonts ? document.fonts.ready.catch(() => {}) : Promise.resolve();
+    Promise.all([assetsReady, fontsReady])
+      .then(() => {
+        setBootProgress(100, "সম্পদ লোড সম্পন্ন");
+        finishBoot();
+      })
       .catch(error => {
         console.error("Startup resource issue:", error);
         setBootProgress(100, "সীমিত মোডে প্রস্তুত");
