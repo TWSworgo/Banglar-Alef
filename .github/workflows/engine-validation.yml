@@ -4,20 +4,16 @@ on:
   push:
     branches: [main]
     paths:
-      - "engine.js"      - "game.js"
-      - "game.html"
-      - "game.css"
-      - ".github/scripts/game-browser-test.mjs"
-
+      - "engine.js"
       - "engine-systems.js"
       - "engine-assets.js"
       - "engine-showcase.js"
-      - ".github/scripts/engine-systems.test.mjs"
-      - ".github/scripts/engine-assets.test.mjs"
       - "game.js"
       - "game.html"
       - "game.css"
       - ".github/scripts/game-browser-test.mjs"
+      - ".github/scripts/engine-systems.test.mjs"
+      - ".github/scripts/engine-assets.test.mjs"
       - "engine.html"
       - "engine.css"
       - "city.html"
@@ -31,14 +27,14 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - "engine.js"      - "game.js"
-      - "game.html"
-      - "game.css"
-      - ".github/scripts/game-browser-test.mjs"
-
+      - "engine.js"
       - "engine-systems.js"
       - "engine-assets.js"
       - "engine-showcase.js"
+      - "game.js"
+      - "game.html"
+      - "game.css"
+      - ".github/scripts/game-browser-test.mjs"
       - ".github/scripts/engine-systems.test.mjs"
       - ".github/scripts/engine-assets.test.mjs"
       - "engine.html"
