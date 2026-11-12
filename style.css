@@ -9,3 +9,10 @@
 #missionPanel small{font-size:10px;color:#b7aa94}
 #missionPanel b{font-size:14px}
 #missionPanel span{font-size:11px;color:#d1c6b4}
+
+#safetyPanel{width:220px;background:#17130fe8;border:1px solid #ffffff25;border-left:3px solid #e0a34a;border-radius:9px;padding:8px 12px;display:grid;gap:5px}
+#safetyPanel small{font-size:10px;color:#b7aa94}
+#safetyPanel b{font-size:12px}
+#safetyPanel i{height:5px;background:#ffffff30;border-radius:8px;overflow:hidden}
+#safetyPanel em{display:block;height:100%;width:0;background:#e0a34a;border-radius:8px}
+@media(max-width:700px){#safetyPanel{width:185px;padding:7px 9px}}
