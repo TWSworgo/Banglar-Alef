@@ -72,18 +72,30 @@ export class AssetPipeline {
 }
 
 export async function createThreeAssetPipeline(renderer) {
-  const [gltfModule, dracoModule, ktx2Module] = await Promise.all([
-    import("three/addons/loaders/GLTFLoader.js"),
-    import("three/addons/loaders/DRACOLoader.js"),
-    import("three/addons/loaders/KTX2Loader.js")
-  ]);
-  const dracoLoader = new dracoModule.DRACOLoader();
-  dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.7/");
-  const ktx2Loader = new ktx2Module.KTX2Loader();
-  ktx2Loader.setTranscoderPath("https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/libs/basis/");
-  ktx2Loader.detectSupport(renderer);
+  const gltfModule = await import("three/addons/loaders/GLTFLoader.js");
   const loader = new gltfModule.GLTFLoader();
-  loader.setDRACOLoader(dracoLoader);
-  loader.setKTX2Loader(ktx2Loader);
+  let dracoLoader = null, ktx2Loader = null;
+
+  try {
+    const module = await import("three/addons/loaders/DRACOLoader.js");
+    dracoLoader = new module.DRACOLoader();
+    dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.7/");
+    loader.setDRACOLoader(dracoLoader);
+  } catch (error) {
+    console.warn("Draco decoder unavailable; uncompressed glTF models remain supported.", error);
+  }
+
+  try {
+    const module = await import("three/addons/loaders/KTX2Loader.js");
+    ktx2Loader = new module.KTX2Loader();
+    ktx2Loader.setTranscoderPath("https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/libs/basis/");
+    ktx2Loader.detectSupport(renderer);
+    loader.setKTX2Loader(ktx2Loader);
+  } catch (error) {
+    ktx2Loader?.dispose?.();
+    ktx2Loader = null;
+    console.warn("KTX2 textures unavailable; standard glTF textures remain supported.", error);
+  }
+
   return new AssetPipeline({ loader, dracoLoader, ktx2Loader });
 }
