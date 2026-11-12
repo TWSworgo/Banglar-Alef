@@ -1,11 +1,14 @@
 import * as THREE from "three";
 import { buildDhakaShowcase } from "./engine-showcase.js";
+import { createNewGameState, loadGameState, saveGameState, transitionGameState, updateGameState } from "./game-core.js";
 
 const $ = id => document.getElementById(id);
 const root = $("world");
 const errorPanel = $("error-panel");
 let renderer, scene, camera, vehicle, clock, animationId;
 let paused = false, speed = 0, battery = 100, money = 0;
+let gameState;
+let saveClock = 0;
 let steering = 0, forward = false, braking = false, journeyStage = 0;
 const keys = new Set();
 const controls = { left:false, right:false, forward:false, brake:false };
@@ -63,9 +66,9 @@ function init(){
   const sun=new THREE.DirectionalLight(0xffe4bd,2.2);sun.position.set(-24,38,18);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
   buildRoad();
   const showcase=buildDhakaShowcase(THREE,scene);
-  vehicle=showcase.vehicle;vehicle.position.set(0,0,48);
-  // The showcase vehicle faces +Z. Travel initially heads toward -Z.
-  vehicle.rotation.y=Math.PI;
+  vehicle=showcase.vehicle;
+  vehicle.position.set(gameState.player.position.x,gameState.player.position.y,gameState.player.position.z);
+  vehicle.rotation.y=gameState.player.heading;
   addTraffic();
   addPassenger();
   clock=new THREE.Clock();
@@ -84,9 +87,28 @@ function addEvents(){
     const up=e=>{e.preventDefault();controls[name]=false;};
     button.addEventListener("pointerdown",down);button.addEventListener("pointerup",up);button.addEventListener("pointercancel",up);button.addEventListener("lostpointercapture",up);
   });
-  $("pause").addEventListener("click",togglePause);$("resume").addEventListener("click",togglePause);
+  $("pause").addEventListener("click",togglePause);$("resume").addEventListener("click",togglePause);\n  $("restart-game").addEventListener("click",()=>{persistGame();window.location.href="./game.html?new=1";});
 }
-function togglePause(){paused=!paused;$("pause-panel").hidden=!paused;if(!paused)clock.getDelta();}
+function persistGame(){
+  if(!gameState||!vehicle)return;
+  gameState=updateGameState(gameState,state=>{
+    state.player.money=money;
+    state.player.battery=battery;
+    state.player.position={x:vehicle.position.x,y:vehicle.position.y,z:vehicle.position.z};
+    state.player.heading=vehicle.rotation.y;
+    state.statistics.distanceMetres=Math.max(state.statistics.distanceMetres,Math.max(0,48-vehicle.position.z));
+    state.statistics.playTimeSeconds+=0;
+  });
+  const result=saveGameState(gameState);
+  if(!result.ok) $("toast").textContent="গেম সংরক্ষণ করা যায়নি — browser storage পরীক্ষা করো";
+  return result;
+}
+function togglePause(){
+  paused=!paused;
+  $("pause-panel").hidden=!paused;
+  if(paused){gameState=transitionGameState(gameState,"paused");persistGame();}
+  else{gameState=transitionGameState(gameState,"playing");clock.getDelta();}
+}
 function update(dt){
   const go=keys.has("w")||keys.has("arrowup")||controls.forward;
   const stop=keys.has("s")||keys.has("arrowdown")||controls.brake;
@@ -98,7 +120,7 @@ function update(dt){
   vehicle.rotation.y=Math.PI+direction*0.32*Math.min(1,speed/5);
   vehicle.position.x=THREE.MathUtils.clamp(vehicle.position.x+direction*dt*(2.2+speed*.24),-5.6,5.6);
   vehicle.position.z-=speed*dt;
-  battery=Math.max(0,battery-dt*(.012+speed*.0018));
+  battery=Math.max(0,battery-dt*(.012+speed*.0018));\n  gameState=updateGameState(gameState,state=>{state.statistics.playTimeSeconds+=dt;state.statistics.distanceMetres+=Math.max(0,previousZ-vehicle.position.z);});\n  saveClock+=dt;\n  if(saveClock>=5){saveClock=0;persistGame();}
   traffic.forEach(car=>{car.position.z+=car.userData.speed*dt;if(car.position.z>65)car.position.z=-270;});
   const target=new THREE.Vector3(vehicle.position.x,4.5,vehicle.position.z+10.5);
   camera.position.lerp(target,.09);
@@ -107,7 +129,7 @@ function update(dt){
   $("battery").textContent=Math.round(battery).toLocaleString("bn-BD")+"%";
   $("money").textContent=money.toLocaleString("bn-BD");
   if(journeyStage===0&&vehicle.position.z< -28){journeyStage=1;$("mission-label").textContent="যাত্রী পাওয়া গেছে";$("mission-text").textContent="সামনের সবুজ মার্কারের কাছে গাড়ি থামাও";$("toast").textContent="যাত্রী তুলতে গাড়ি ধীরে থামাও";}
-  if(journeyStage===1&&vehicle.position.z< -83&&speed<1.2){journeyStage=2;money+=30;$("mission-label").textContent="যাত্রা সম্পন্ন";$("mission-text").textContent="যাত্রীকে পৌঁছে দিয়েছ — ভাড়া ৳৩০";$("toast").textContent="প্রথম ভাড়া পেয়েছ: ৳৩০"; }
+  if(journeyStage===1&&vehicle.position.z< -83&&speed<1.2){journeyStage=2;money+=30;gameState=updateGameState(gameState,state=>{state.player.money=money;state.progression.journeysCompleted+=1;state.statistics.totalEarned+=30;});persistGame();$("mission-label").textContent="যাত্রা সম্পন্ন";$("mission-text").textContent="যাত্রীকে পৌঁছে দিয়েছ — ভাড়া ৳৩০";$("toast").textContent="প্রথম ভাড়া পেয়েছ: ৳৩০"; }
   if(battery<=0){speed=Math.max(0,speed-dt*5);$("mission-text").textContent="ব্যাটারি শেষ — যাত্রা থেমে গেছে";}
 }
 function tick(){
