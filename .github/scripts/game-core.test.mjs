@@ -54,7 +54,9 @@ test("game lifecycle transitions enforce allowed states", () => {
   const paused = transitionGameState(playing, "paused");
   assert.equal(paused.status, "paused");
   assert.equal(transitionGameState(paused, "playing").status, "playing");
-  assert.throws(() => transitionGameState(paused, "completed"), /Invalid game state transition/);
+  const completed = transitionGameState(paused, "completed");
+  assert.equal(completed.status, "completed");
+  assert.throws(() => transitionGameState(completed, "paused"), /Invalid game state transition/);
 });
 
 test("clear save removes the persisted slot", () => {
