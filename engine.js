@@ -533,23 +533,26 @@ function showError(error) {
 
 function disposeRenderer() {
   disposed = true;
+  occlusionCuller?.dispose();
+  occlusionCuller = null;
+  collisionWorld?.clear();
+  collisionWorld = null;
+  occlusionTargets.length = 0;
+  occlusionSources.length = 0;
+  if (resourceTracker) {
+    resourceTracker.trackScene(scene);
+    resourceTracker.track(environmentMap);
+    resourceTracker.dispose();
+    resourceTracker = null;
+  }
   if (animationFrame) cancelAnimationFrame(animationFrame);
   resizeObserver?.disconnect();
   controls?.dispose();
-  if (environmentMap) { environmentMap.dispose(); environmentMap = null; }
+  environmentMap = null;
   if (renderer) {
     renderer.dispose();
     renderer.domElement.remove();
   }
-  scene?.traverse(object => {
-    object.geometry?.dispose?.();
-    if (object.material) {
-      for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
-        for (const value of Object.values(material)) if (value?.isTexture) value.dispose();
-        material.dispose();
-      }
-    }
-  });
   renderer = scene = camera = controls = null;
   lights = null;
   lodObjects.length = 0;
@@ -588,6 +591,16 @@ $("retry-renderer").addEventListener("click", () => {
   status.textContent = "3D renderer আবার প্রস্তুত হচ্ছে…";
   viewport.prepend(status);
   start();
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+    animationFrame = 0;
+    clock?.stop();
+  } else if (!disposed && renderer && !animationFrame) {
+    clock?.start();
+    animationFrame = requestAnimationFrame(animate);
+  }
 });
 window.addEventListener("pagehide", disposeRenderer, { once: true });
 start();
