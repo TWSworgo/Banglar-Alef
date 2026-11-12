@@ -70,6 +70,7 @@ function init(){
   addPassenger();
   clock=new THREE.Clock();
   addEvents();
+  window.__gameDiagnostics = { get vehicleZ(){return vehicle.position.z;}, get speed(){return speed;}, get battery(){return battery;}, get journeyStage(){return journeyStage;} };
   window.addEventListener("resize",resize);
   tick();
 }
