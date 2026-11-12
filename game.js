@@ -6,7 +6,7 @@ const ui={
  overlay:$("overlay"),start:$("start"),pause:$("pause"),pausePanel:$("pausePanel"),resume:$("resume"),restart:$("restart"),
  endPanel:$("endPanel"),again:$("again"),endTitle:$("endTitle"),endText:$("endText"),finalLoss:$("finalLoss"),finalBest:$("finalBest"),finalCrashes:$("finalCrashes"),
  loss:$("loss"),combo:$("combo"),battery:$("battery"),batteryBar:$("batteryBar"),best:$("best"),anger:$("anger"),angerBar:$("angerBar"),
- hint:$("hint"),clock:$("clock"),toast:$("toast"),behind:$("behind"),horn:$("horn"),bomb:$("bomb"),jump:$("jump"),camera:$("camera"),quality:$("quality"),soundToggle:$("soundToggle")
+ hint:$("hint"),clock:$("clock"),toast:$("toast"),behind:$("behind"),horn:$("horn"),shout:$("shout"),jump:$("jump"),camera:$("camera"),quality:$("quality"),soundToggle:$("soundToggle")
 };
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);
@@ -161,11 +161,11 @@ function horn(){
  if(!state.running||state.paused||state.over||state.hornCooldown>0)return;state.hornCooldown=1.1;tone(360,.22,"sawtooth",.045);tone(440,.22,"square",.025);toast("পোঁ পোঁ! পথ ছাড়ুন!");
  for(const p of people){const d=Math.hypot(p.mesh.position.x-player.position.x,p.mesh.position.z-player.position.z);if(d<12)p.dir=Math.sign(p.mesh.position[p.axis==="x"?"x":"z"]-(p.axis==="x"?player.position.x:player.position.z))||p.dir}
 }
-function soundBomb(){
+function crowdDistraction(){
  if(!state.running||state.paused||state.over||state.bombCooldown>0)return;state.bombCooldown=10;state.battery=Math.max(0,state.battery-8);
  tone(70,.45,"sawtooth",.08);tone(110,.35,"triangle",.06);state.anger=Math.max(0,state.anger-35);
  for(const c of chasers){c.stun=3.5;c.mesh.position.x+=(c.mesh.position.x-player.position.x)*.85;c.mesh.position.z+=(c.mesh.position.z-player.position.z)*.85}
- toast("শব্দবোমা! জনতা ছত্রভঙ্গ — চার্জ −৮%");
+ toast("হইচই! জনতা ছত্রভঙ্গ — চার্জ −৮%");
 }
 function cycleCamera(){cameraMode=(cameraMode+1)%cameraOffsets.length;toast(["পেছনের ক্যামেরা","ড্রাইভার ভিউ","উপরের ক্যামেরা"][cameraMode])}
 function jump(){
@@ -179,13 +179,13 @@ function applyQuality(value){
  scene.fog.near=value==="low"?80:105;scene.fog.far=value==="low"?260:360;
  if(ui.quality)ui.quality.value=value;
 }
-ui.horn.onclick=horn;ui.bomb.onclick=soundBomb;ui.jump.onclick=jump;ui.camera.onclick=cycleCamera;
+ui.horn.onclick=horn;ui.shout.onclick=crowdDistraction;ui.jump.onclick=jump;ui.camera.onclick=cycleCamera;
 ui.soundToggle.onclick=()=>{state.muted=!state.muted;ui.soundToggle.textContent=state.muted?"শব্দ: বন্ধ":"শব্দ: চালু";if(!state.muted)tone(520,.08,"sine",.025)};
 ui.quality.onchange=()=>applyQuality(ui.quality.value);
 applyQuality(state.quality);ui.soundToggle.textContent="শব্দ: চালু";
 addEventListener("keydown",e=>{
  keys[e.key.toLowerCase()]=true;if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();
- if(e.key.toLowerCase()==="p")togglePause();if(e.key.toLowerCase()==="h")horn();if(e.key.toLowerCase()==="b"||e.key.toLowerCase()==="x")soundBomb();if(e.key.toLowerCase()==="c")cycleCamera();if(e.code==="Space")jump();
+ if(e.key.toLowerCase()==="p")togglePause();if(e.key.toLowerCase()==="h")horn();if(e.key.toLowerCase()==="b"||e.key.toLowerCase()==="x")crowdDistraction();if(e.key.toLowerCase()==="c")cycleCamera();if(e.code==="Space")jump();
 });
 addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 document.querySelectorAll("[data-control]").forEach(button=>{
