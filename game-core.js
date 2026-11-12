@@ -20,6 +20,7 @@ export function createNewGameState() {
     progression: {
       careerLevel: 1,
       journeysCompleted: 0,
+      activeMissionStage: 0,
       unlockedFeatures: ["basic-driving"]
     },
     statistics: {
@@ -43,6 +44,7 @@ export function validateGameState(value) {
     Number.isFinite(p.heading) && typeof p.vehicleId === "string" &&
     g && Number.isInteger(g.careerLevel) && g.careerLevel >= 1 &&
     Number.isInteger(g.journeysCompleted) && g.journeysCompleted >= 0 &&
+    Number.isInteger(g.activeMissionStage) && g.activeMissionStage >= 0 && g.activeMissionStage <= 2 &&
     Array.isArray(g.unlockedFeatures) &&
     s && Number.isFinite(s.distanceMetres) && s.distanceMetres >= 0 &&
     Number.isFinite(s.totalEarned) && s.totalEarned >= 0 &&
