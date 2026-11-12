@@ -75,7 +75,7 @@ function init(){
   if(journeyStage===2){$("mission-label").textContent="যাত্রা সম্পন্ন";$("mission-text").textContent="আগের যাত্রা সম্পন্ন হয়েছে — নতুন যাত্রা শুরু করো";}
   clock=new THREE.Clock();
   addEvents();
-  window.__gameDiagnostics = { get vehicleZ(){return vehicle.position.z;}, get speed(){return speed;}, get battery(){return battery;}, get journeyStage(){return journeyStage;} };
+  window.__gameDiagnostics = { get vehicleZ(){return vehicle.position.z;}, get speed(){return speed;}, get battery(){return battery;}, get journeyStage(){return journeyStage;}, complete:finishGame };
   window.addEventListener("resize",resize);
   tick();
 }
@@ -90,6 +90,8 @@ function addEvents(){
     button.addEventListener("pointerdown",down);button.addEventListener("pointerup",up);button.addEventListener("pointercancel",up);button.addEventListener("lostpointercapture",up);
   });
   $("pause").addEventListener("click",togglePause);$("resume").addEventListener("click",togglePause);
+  $("completion-restart").addEventListener("click",()=>{clearCurrentSaveAndRestart();});
+  window.addEventListener("banglar-alef:complete",finishGame);
   $("restart-game").addEventListener("click",()=>{persistGame();window.location.href="./game.html?new=1";});
 }
 function persistGame(){
@@ -106,7 +108,17 @@ function persistGame(){
   if(!result.ok) $("toast").textContent="গেম সংরক্ষণ করা যায়নি — browser storage পরীক্ষা করো";
   return result;
 }
+function clearCurrentSaveAndRestart(){window.location.href="./game.html?new=1";}
+function finishGame(){
+  if(!gameState||gameState.status==="completed")return;
+  if(gameState.status==="playing"||gameState.status==="paused")gameState=transitionGameState(gameState,"completed");
+  paused=true;
+  $("pause-panel").hidden=true;
+  $("completion-panel").hidden=false;
+  persistGame();
+}
 function togglePause(){
+  if(gameState.status==="completed")return;
   paused=!paused;
   $("pause-panel").hidden=!paused;
   if(paused){gameState=transitionGameState(gameState,"paused");persistGame();}
