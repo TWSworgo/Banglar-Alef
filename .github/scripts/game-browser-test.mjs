@@ -28,9 +28,13 @@ try{
   const menu=await menuContext.newPage();
   await menu.goto("http://127.0.0.1:4173/index.html",{waitUntil:"domcontentloaded"});
   await menu.waitForSelector("#new-game:not(:disabled)",{timeout:15000});
+  await menu.waitForSelector("#continue-game:not(:disabled)",{timeout:15000});
+  await menu.locator("#continue-game").click();
+  await menu.waitForURL("**/game.html?continue=1",{timeout:15000});
+  await menu.goto("http://127.0.0.1:4173/index.html",{waitUntil:"domcontentloaded"});
   await menu.locator("#new-game").click();
-  await menu.waitForURL("**/game.html",{timeout:15000});
-  console.log("New Game navigation and mobile driving passed.");
+  await menu.waitForURL("**/game.html?new=1",{timeout:15000});
+  console.log("Save/Continue, New Game navigation and mobile driving passed.");
   await menuContext.close();
 }finally{await browser.close();}
 if(errors.length)failures.push(...errors);
