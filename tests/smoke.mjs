@@ -23,7 +23,7 @@ try {
   assert.equal(await page.evaluate(() => window.__GAME_TEST__.pickup()), true, "passenger pickup should activate");
   assert.equal(await page.locator("#mission").textContent(), "যাত্রীকে গন্তব্যে পৌঁছান");
   assert.equal(await page.evaluate(() => window.__GAME_TEST__.dropoff()), true, "safe passenger dropoff should award score");
-  assert.equal(await page.evaluate(() => window.__GAME_STATE__.score - scoreBeforeRide), 100);
+  assert.equal(await page.evaluate(before => window.__GAME_STATE__.score - before, scoreBeforeRide), 100);
   await page.keyboard.down("w");
   await page.waitForTimeout(650);
   await page.keyboard.up("w");
