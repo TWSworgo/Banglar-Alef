@@ -17,31 +17,50 @@ export function buildOverpassQuery(bounds = UTTARA_PILOT.bounds) {
   return `[out:json][timeout:35];(way["highway"](${box});way["building"](${box}););out geom;`;
 }
 
-export async function fetchOSMExtract({ bounds = UTTARA_PILOT.bounds, fetchImpl = fetch, endpoints, signal } = {}) {
+export async function fetchOSMExtract({ bounds = UTTARA_PILOT.bounds, fetchImpl = fetch, endpoints, signal, timeoutMs = 12000 } = {}) {
   const query = buildOverpassQuery(bounds);
   const mirrors = endpoints || [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter"
   ];
-  let lastError;
-  for (const endpoint of mirrors) {
+  if (!mirrors.length) throw new Error("No OpenStreetMap servers are configured.");
+  const controllers = [];
+  const attempts = mirrors.map(endpoint => (async () => {
+    const controller = new AbortController();
+    controllers.push(controller);
+    const abortFromParent = () => controller.abort(signal.reason);
+    if (signal?.aborted) abortFromParent();
+    else signal?.addEventListener("abort", abortFromParent, { once: true });
+    const timeout = setTimeout(() => controller.abort(new Error("Overpass server timed out")), timeoutMs);
     try {
       const response = await fetchImpl(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
         body: "data=" + encodeURIComponent(query),
-        signal
+        signal: controller.signal
       });
       if (!response.ok) throw new Error("OpenStreetMap server returned HTTP " + response.status);
       const data = await response.json();
       if (!Array.isArray(data.elements)) throw new Error("OpenStreetMap response has no elements array");
       return { data, endpoint, query };
     } catch (error) {
-      lastError = error;
-      if (signal?.aborted) throw error;
+      if (signal?.aborted) throw signal.reason || error;
+      if (controller.signal.aborted) throw new Error(endpoint + " timed out after " + timeoutMs + " ms");
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+      signal?.removeEventListener("abort", abortFromParent);
     }
+  })());
+  try {
+    // Race Overpass mirrors so a slow first server does not block a healthy second one.
+    return await Promise.any(attempts);
+  } catch (error) {
+    const reasons = error.errors || [error];
+    throw new Error("দুইটি OpenStreetMap সার্ভার থেকেই দ্রুত ডেটা পাওয়া যায়নি। কিছুক্ষণ পর আবার চেষ্টা করুন। (" + reasons.map(item => item.message).join("; ") + ")");
+  } finally {
+    controllers.forEach(controller => controller.abort());
   }
-  throw new Error("OSM extract could not be downloaded. " + (lastError?.message || "No Overpass mirror responded."));
 }
 
 export function projectCoordinates(lat, lon, originLat, originLon) {
