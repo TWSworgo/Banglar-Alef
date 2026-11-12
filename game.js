@@ -52,6 +52,26 @@ for(let gx=-GRID;gx<GRID;gx++)for(let gz=-GRID;gz<GRID;gz++){
 }
 // landmark market and station signs
 for(let i=-GRID;i<=GRID;i+=2){let x=i*STEP;const sign=box(city,x,3,-HALF+5,8,1,.25,M.yellow,false);sign.position.y=3;}
+// Selected major intersections: pedestrian crossings and working traffic signals
+const signalPosts=[];
+const signalRed=new THREE.MeshStandardMaterial({color:0x5a1714,emissive:0x260000});
+const signalGreen=new THREE.MeshStandardMaterial({color:0x174d2a,emissive:0x00240b});
+for(let ix=-GRID;ix<=GRID;ix+=3)for(let iz=-GRID;iz<=GRID;iz+=3){
+ const x=ix*STEP,z=iz*STEP;
+ // Zebra crossings on both approaches
+ for(let n=0;n<5;n++){
+  const off=-4+n*2;
+  box(city,x+off,.09,z-ROAD/2-1.1,.85,.035,2.2,M.white,false);
+  box(city,x+off,.09,z+ROAD/2+1.1,.85,.035,2.2,M.white,false);
+  box(city,x-ROAD/2-1.1,.09,z+off,2.2,.035,.85,M.white,false);
+  box(city,x+ROAD/2+1.1,.09,z+off,2.2,.035,.85,M.white,false);
+ }
+ const pole=box(city,x+5,2.4,z+5,.16,4.8,.16,M.black,false);
+ const housing=box(city,x+5,4.6,z+5,.62,1.55,.42,M.black,false);
+ const red=new THREE.Mesh(new THREE.SphereGeometry(.19,10,8),signalRed);red.position.set(x+5,5.05,z+4.77);city.add(red);
+ const green=new THREE.Mesh(new THREE.SphereGeometry(.19,10,8),signalGreen);green.position.set(x+5,4.25,z+4.77);city.add(green);
+ signalPosts.push({red,green,x,z});
+}
 // vehicle builders
 function makeCng(){
  const g=new THREE.Group();const body=box(g,0,.82,0,1.85,1.15,2.65,M.green);box(g,0,1.58,-.12,1.75,.13,2.3,M.yellow);
@@ -84,12 +104,12 @@ for(let i=0;i<38;i++){
 const people=[];
 for(let i=0;i<64;i++){
  const p=makePerson();let axis=Math.random()<.5?"x":"z",line=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP;
- p.position.set(axis==="x"?Math.random()*GRID*STEP-HALF:line,0,axis==="z"?Math.random()*GRID*STEP-HALF:line);scene.add(p);people.push({mesh:p,axis,line,dir:Math.random()<.5?1:-1,speed:.5+Math.random()*.7,phase:Math.random()*6});
+ p.position.set(axis==="x"?Math.random()*GRID*STEP-HALF:line,0,axis==="z"?Math.random()*GRID*STEP-HALF:line);p.position[axis==="x"?"z":"x"]+=Math.random()<.5?-(ROAD/2+1.8):(ROAD/2+1.8);scene.add(p);people.push({mesh:p,axis,line,dir:Math.random()<.5?1:-1,speed:.5+Math.random()*.7,phase:Math.random()*6});
 }
 const pickups=[];
 for(let i=0;i<12;i++){let x=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP+5,z=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP+5;const ring=new THREE.Mesh(new THREE.TorusGeometry(1.3,.16,8,24),mat(0x6dff91));ring.rotation.x=Math.PI/2;ring.position.set(x,.35,z);scene.add(ring);pickups.push({mesh:ring,x,z,active:true})}
 const destination=new THREE.Mesh(new THREE.TorusGeometry(2,.2,8,32),mat(0xffc82e));destination.rotation.x=Math.PI/2;destination.position.set(60,.3,60);scene.add(destination);
-const state={running:false,paused:false,speed:0,yaw:0,battery:100,money:250,wanted:0,mission:0,passenger:false,time:8.5,toastTimer:0};
+const state={running:false,paused:false,speed:0,yaw:0,battery:100,money:250,wanted:0,mission:0,passenger:false,time:8.5,toastTimer:0,trafficClock:0};
 const keys={};const controls={left:false,right:false,throttle:false,brake:false,boost:false};
 addEventListener("keydown",e=>{keys[e.key.toLowerCase()]=true;if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();if(e.key.toLowerCase()==="p")togglePause()});
 addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
@@ -119,12 +139,32 @@ function updatePlayer(dt){
  if(state.wanted>0&&Math.random()<dt*.018)state.wanted=Math.max(0,state.wanted-.02);
 }
 function updateTraffic(dt){
+ state.trafficClock=(state.trafficClock+dt)%40;
+ const greenAxis=state.trafficClock<20?"x":"z";
+ for(const sig of signalPosts){
+  const greenX=greenAxis==="x";
+  sig.red.material.color.setHex(greenX?0x5a1714:0xf02d20);
+  sig.red.material.emissive.setHex(greenX?0x260000:0x8a0800);
+  sig.green.material.color.setHex(greenX?0x31e66b:0x174d2a);
+  sig.green.material.emissive.setHex(greenX?0x087a2a:0x00240b);
+ }
  for(const t of traffic){
-  const m=t.mesh;const along=t.axis==="x"?"x":"z";let pos=m.position[along];let target=t.base;
-  for(const q of traffic){if(q===t||q.axis!==t.axis||q.line!==t.line||q.dir!==t.dir)continue;const gap=(q.mesh.position[along]-pos)*t.dir;if(gap>0&&gap<12)target=Math.min(target,Math.max(1,q.speed-(12-gap)*.6))}
-  const pdx=player.position.x-m.position.x,pdz=player.position.z-m.position.z;if(pdx*pdx+pdz*pdz<70)target=Math.min(target,3);
-  t.speed+=clamp(target-t.speed,-8*dt,4*dt);m.position[along]+=t.dir*t.speed*dt;
-  if(Math.abs(m.position[along])>HALF+20){m.position[along]=-t.dir*(HALF+15);t.base=4+Math.random()*9}
+  const m=t.mesh,along=t.axis==="x"?"x":"z";let pos=m.position[along],target=t.base;
+  // Same-lane car-following with a larger safe gap
+  for(const q of traffic){
+   if(q===t||q.axis!==t.axis||q.line!==t.line||q.dir!==t.dir)continue;
+   const gap=(q.mesh.position[along]-pos)*t.dir;
+   if(gap>0&&gap<16)target=Math.min(target,Math.max(0,q.speed-(16-gap)*.85));
+  }
+  // Synchronized signal phases: north/south and east/west traffic alternate
+  const junction=t.dir>0?(Math.floor(pos/STEP)+1)*STEP:(Math.ceil(pos/STEP)-1)*STEP;
+  const distance=(junction-pos)*t.dir;
+  if(t.axis!==greenAxis&&distance>0&&distance<12)target=Math.min(target,Math.max(0,(distance-4)*1.25));
+  const pdx=player.position.x-m.position.x,pdz=player.position.z-m.position.z;
+  if(pdx*pdx+pdz*pdz<100)target=Math.min(target,Math.max(0,Math.sqrt(pdx*pdx+pdz*pdz)-5));
+  t.speed+=clamp(target-t.speed,-12*dt,5*dt);
+  m.position[along]+=t.dir*t.speed*dt;
+  if(Math.abs(m.position[along])>HALF+20){m.position[along]=-t.dir*(HALF+15);t.base=4+Math.random()*9;t.speed=Math.min(t.speed,5)}
   const cross=t.axis==="x"?"z":"x";m.position[cross]=t.line+t.lane;
  }
 }
