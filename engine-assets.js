@@ -72,12 +72,12 @@ export class AssetPipeline {
 }
 
 export async function createThreeAssetPipeline(renderer) {
-  const gltfModule = await import("https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js");
+  const gltfModule = await import("three/addons/loaders/GLTFLoader.js");
   const loader = new gltfModule.GLTFLoader();
   let dracoLoader = null, ktx2Loader = null;
 
   try {
-    const module = await import("https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/DRACOLoader.js");
+    const module = await import("three/addons/loaders/DRACOLoader.js");
     dracoLoader = new module.DRACOLoader();
     dracoLoader.setDecoderPath("https://www.gstatic.com/draco/versioned/decoders/1.5.7/");
     loader.setDRACOLoader(dracoLoader);
@@ -86,7 +86,7 @@ export async function createThreeAssetPipeline(renderer) {
   }
 
   try {
-    const module = await import("https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/KTX2Loader.js");
+    const module = await import("three/addons/loaders/KTX2Loader.js");
     ktx2Loader = new module.KTX2Loader();
     ktx2Loader.setTranscoderPath("https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/libs/basis/");
     ktx2Loader.detectSupport(renderer);
