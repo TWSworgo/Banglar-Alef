@@ -92,7 +92,7 @@ function makeAsphaltMaps() {
   const normalMap = new THREE.CanvasTexture(normalCanvas);
   normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
   normalMap.repeat.set(3, 3);
-  normalMap.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  normalMap.anisotropy = Math.min(hardwareProfile.anisotropy, renderer.capabilities.getMaxAnisotropy());
   normalMap.minFilter = THREE.LinearMipmapLinearFilter;
   normalMap.magFilter = THREE.LinearFilter;
   return { map, roughnessMap, normalMap };
@@ -387,7 +387,7 @@ function resize() {
   const height = Math.max(1, viewport.clientHeight);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65) * adaptiveScale);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, hardwareProfile.pixelRatioCap) * adaptiveScale);
   renderer.setSize(width, height, false);
 }
 
