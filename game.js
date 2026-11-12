@@ -128,8 +128,8 @@ function update(dt){
   $("speed").textContent=Math.round(speed*3.6).toLocaleString("bn-BD");
   $("battery").textContent=Math.round(battery).toLocaleString("bn-BD")+"%";
   $("money").textContent=money.toLocaleString("bn-BD");
-  if(journeyStage===0&&vehicle.position.z< -28){journeyStage=1;$("mission-label").textContent="যাত্রী পাওয়া গেছে";$("mission-text").textContent="সামনের সবুজ মার্কারের কাছে গাড়ি থামাও";$("toast").textContent="যাত্রী তুলতে গাড়ি ধীরে থামাও";}
-  if(journeyStage===1&&vehicle.position.z< -83&&speed<1.2){journeyStage=2;money+=30;gameState=updateGameState(gameState,state=>{state.player.money=money;state.progression.journeysCompleted+=1;state.statistics.totalEarned+=30;});persistGame();$("mission-label").textContent="যাত্রা সম্পন্ন";$("mission-text").textContent="যাত্রীকে পৌঁছে দিয়েছ — ভাড়া ৳৩০";$("toast").textContent="প্রথম ভাড়া পেয়েছ: ৳৩০"; }
+  if(journeyStage===0&&vehicle.position.z< -28){journeyStage=1;gameState=updateGameState(gameState,state=>{state.progression.activeMissionStage=1;});persistGame();$("mission-label").textContent="যাত্রী পাওয়া গেছে";$("mission-text").textContent="সামনের সবুজ মার্কারের কাছে গাড়ি থামাও";$("toast").textContent="যাত্রী তুলতে গাড়ি ধীরে থামাও";}
+  if(journeyStage===1&&vehicle.position.z< -83&&speed<1.2){journeyStage=2;money+=30;gameState=updateGameState(gameState,state=>{state.player.money=money;state.progression.journeysCompleted+=1;state.progression.activeMissionStage=2;state.statistics.totalEarned+=30;});persistGame();$("mission-label").textContent="যাত্রা সম্পন্ন";$("mission-text").textContent="যাত্রীকে পৌঁছে দিয়েছ — ভাড়া ৳৩০";$("toast").textContent="প্রথম ভাড়া পেয়েছ: ৳৩০"; }
   if(battery<=0){speed=Math.max(0,speed-dt*5);$("mission-text").textContent="ব্যাটারি শেষ — যাত্রা থেমে গেছে";}
 }
 function tick(){
