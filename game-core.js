@@ -97,7 +97,7 @@ export function updateGameState(state, updater) {
 export function transitionGameState(state, status) {
   const allowed = {
     playing: ["paused", "game-over", "completed"],
-    paused: ["playing", "game-over"],
+    paused: ["playing", "game-over", "completed"],
     "game-over": ["playing"],
     completed: ["playing"]
   };
