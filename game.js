@@ -110,7 +110,7 @@ function persistGame(){
 }
 function clearCurrentSaveAndRestart(){window.location.href="./game.html?new=1";}
 function finishGame(){
-  if(!gameState||gameState.status==="completed")return;
+  if(!gameState)return;
   if(gameState.status==="playing"||gameState.status==="paused")gameState=transitionGameState(gameState,"completed");
   paused=true;
   $("pause-panel").hidden=true;
@@ -165,6 +165,7 @@ try{
   battery=gameState.player.battery;
   journeyStage=gameState.progression.activeMissionStage;
   init();
+  if(gameState.status==="completed")finishGame();
   if(params.get("new")==="1") persistGame();
 }catch(error){
   console.error(error);
