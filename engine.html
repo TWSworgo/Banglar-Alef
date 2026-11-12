@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#09130f">
+  <meta name="description" content="Banglar Alef real-time 3D graphics and realism engine laboratory.">
+  <title>Graphics Engine Lab — বাংলার আলেফ</title>
+  <link rel="icon" href="./assets/brand-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./engine.css">
+  <script type="module" src="./engine.js"></script>
+</head>
+<body>
+  <main class="lab">
+    <header class="lab-header">
+      <a class="brand" href="./index.html"><img src="./assets/brand-mark.svg" alt="" width="38" height="38"><span><strong>বাংলার আলেফ</strong><small>GRAPHICS ENGINE LAB</small></span></a>
+      <div class="header-actions"><span class="live-indicator"><i></i> REAL-TIME RENDER</span><a href="./index.html" class="back-link">মূল মেনু ↗</a></div>
+    </header>
+    <section class="lab-intro">
+      <div><p class="eyebrow">FEATURE 02 · REALISM ENGINE</p><h1>3D Graphics <em>&amp; Realism</em></h1><p>Physically based rendering, calibrated materials, real-time lighting এবং adaptive rendering pipeline-এর পরীক্ষাগার।</p></div>
+      <div class="scene-controls"><label for="time-of-day">আলোর সময়</label><select id="time-of-day"><option value="day">দুপুর</option><option value="sunset">বিকেল</option><option value="night">রাত</option></select><button id="reset-camera" type="button">ক্যামেরা Reset</button></div>
+    </section>
+    <section class="viewport-wrap" aria-label="Interactive 3D graphics scene">
+      <div id="viewport" class="viewport"><div class="loading-scene" id="scene-status">3D renderer প্রস্তুত হচ্ছে…</div></div>
+      <div class="viewport-top"><span class="scene-label"><i></i> PBR MATERIAL STUDY · SCENE 01</span><span id="quality-label">AUTO QUALITY</span></div>
+      <div class="viewport-bottom"><span>DRAG TO ORBIT · PINCH / SCROLL TO ZOOM</span><span id="render-state">INITIALIZING</span></div>
+      <div class="scene-error" id="scene-error" hidden><strong>3D Renderer চালু করা যায়নি</strong><p id="scene-error-message">এই browser-এ WebGL support পরীক্ষা করো।</p><button id="retry-renderer" type="button">আবার চেষ্টা</button></div>
+    </section>
+    <section class="telemetry" aria-label="Renderer performance">
+      <div><small>FRAME RATE</small><strong id="fps">—</strong></div>
+      <div><small>FRAME TIME</small><strong id="frame-time">—</strong></div>
+      <div><small>DRAW CALLS</small><strong id="draw-calls">—</strong></div>
+      <div><small>TRIANGLES</small><strong id="triangles">—</strong></div>
+      <div><small>RENDER SCALE</small><strong id="render-scale">—</strong></div>
+      <div><small>WEBGL</small><strong id="webgl-status">CHECKING</strong></div>
+    </section>
+    <section class="lab-notes">
+      <article><span>01 / MATERIAL</span><h2>Physically Based Rendering</h2><p>Roughness, metalness, normal detail ও physically-based light response-সহ material pipeline।</p></article>
+      <article><span>02 / LIGHT</span><h2>Dynamic Lighting</h2><p>Day, sunset ও night lighting preset, directional shadow এবং ambient illumination।</p></article>
+      <article><span>03 / PERFORMANCE</span><h2>Adaptive Renderer</h2><p>Device pixel ratio cap, frame-time monitoring, frustum culling ও distance-based LOD।</p></article>
+    </section>
+    <footer class="lab-footer"><span>বাংলার আলেফ · FEATURE 02</span><span>ENGINE LAB — NOT THE FINAL DHAKA WORLD</span></footer>
+  </main>
+</body>
+</html>
