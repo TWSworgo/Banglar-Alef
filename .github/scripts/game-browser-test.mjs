@@ -23,6 +23,8 @@ try{
   if(!(await page.locator("#pause-panel").isVisible()))failures.push("pause overlay did not open");
   await page.locator("#resume").click();
   if(!(await page.locator("#pause-panel").isHidden()))failures.push("resume did not close pause overlay");
+  await page.evaluate(()=>window.__gameDiagnostics.complete());
+  if(!(await page.locator("#completion-panel").isVisible()))failures.push("game completion lifecycle did not open");
   const menu=await context.newPage();
   await menu.setViewportSize({width:1280,height:800});
   await menu.goto("http://127.0.0.1:4173/index.html",{waitUntil:"domcontentloaded"});
@@ -30,6 +32,7 @@ try{
   await menu.waitForSelector("#continue-game:not(:disabled)",{timeout:15000});
   await menu.locator("#continue-game").click();
   await menu.waitForURL("**/game.html?continue=1",{timeout:15000});
+  await menu.waitForSelector("#completion-panel:not([hidden])",{timeout:15000});
   await menu.goto("http://127.0.0.1:4173/index.html",{waitUntil:"domcontentloaded"});
   await menu.locator("#new-game").click();
   await menu.waitForURL("**/game.html?new=1",{timeout:15000});
