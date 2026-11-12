@@ -141,6 +141,59 @@ function addMaterialStudy(materials) {
   scene.add(detail);
 }
 
+
+function addWaterFeature() {
+  const geometry = new THREE.PlaneGeometry(16, 22, 48, 64);
+  geometry.rotateX(-Math.PI / 2);
+  const material = new THREE.MeshPhysicalMaterial({
+    color: 0x6d9e9b, roughness: 0.14, metalness: 0.1,
+    clearcoat: 1, clearcoatRoughness: 0.08, envMapIntensity: 1.2,
+    transparent: true, opacity: 0.92
+  });
+  const water = new THREE.Mesh(geometry, material);
+  water.position.set(24, 0.08, -12);
+  water.receiveShadow = true;
+  water.userData.basePositions = geometry.attributes.position.array.slice();
+  scene.add(water);
+  return water;
+}
+
+function addAtmosphere() {
+  const count = 600;
+  const positions = new Float32Array(count * 3);
+  const speeds = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 90;
+    positions[i * 3 + 1] = Math.random() * 22 + 0.5;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 120;
+    speeds[i] = 0.25 + Math.random() * 0.8;
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const material = new THREE.PointsMaterial({ color: 0xc8b99a, size: 0.05, transparent: true, opacity: 0.16, depthWrite: false });
+  const dust = new THREE.Points(geometry, material);
+  dust.userData.speeds = speeds;
+  scene.add(dust);
+  return dust;
+}
+
+function addRain() {
+  const count = 900;
+  const positions = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    positions[i * 3] = (Math.random() - 0.5) * 75;
+    positions[i * 3 + 1] = Math.random() * 30;
+    positions[i * 3 + 2] = (Math.random() - 0.5) * 100;
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  const material = new THREE.PointsMaterial({ color: 0xb8d7e5, size: 0.07, transparent: true, opacity: 0.55, depthWrite: false });
+  const rain = new THREE.Points(geometry, material);
+  rain.visible = false;
+  scene.add(rain);
+  return rain;
+}
+
 function addCalibrationObjects(materials) {
   const high = new THREE.Group();
   const sphere = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 24), materials.painted);
@@ -201,13 +254,16 @@ function createScene() {
   addGround(materials);
   addMaterialStudy(materials);
   addCalibrationObjects(materials);
+  const water = addWaterFeature();
+  const dust = addAtmosphere();
+  const rain = addRain();
 
   const ambient = new THREE.Mesh(new THREE.SphereGeometry(0.55, 32, 24), new THREE.MeshStandardMaterial({ color: 0xd5e4cb, roughness: 0.25 }));
   ambient.position.set(0, 1.1, 4);
   ambient.castShadow = true;
   scene.add(ambient);
 
-  return { sun, hemi, fill };
+  return { sun, hemi, fill, water, dust, rain };
 }
 
 let lights;
