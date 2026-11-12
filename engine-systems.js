@@ -259,11 +259,12 @@ export function estimateTextureMemoryBytes(textures) {
   const unique = new Set(textures.filter(Boolean));
   let total = 0;
   for (const texture of unique) {
-    const image = texture.image ?? texture.source?.data;
+    const image = texture.image ?? texture.source?.data ?? texture.mipmaps?.[0];
     const width = image?.width ?? image?.videoWidth ?? 0;
     const height = image?.height ?? image?.videoHeight ?? 0;
     if (!width || !height) continue;
-    const channels = texture.format === 1023 ? 1 : 4;
+    const channelsByFormat = new Map([[1021, 1], [1028, 1], [1025, 2], [1030, 2], [1022, 3]]);
+    const channels = channelsByFormat.get(texture.format) ?? 4;
     total += width * height * channels * (texture.generateMipmaps === false ? 1 : 4 / 3);
   }
   return Math.round(total);
