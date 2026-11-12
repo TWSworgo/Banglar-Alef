@@ -21,6 +21,7 @@ test("new game creates a valid baseline with no invented progression", () => {
   assert.equal(state.player.battery, 100);
   assert.equal(state.progression.careerLevel, 1);
   assert.equal(state.progression.journeysCompleted, 0);
+  assert.equal(state.progression.activeMissionStage, 0);
 });
 
 test("save and load round-trip real player state", () => {
@@ -29,6 +30,7 @@ test("save and load round-trip real player state", () => {
     next.player.money = 75;
     next.player.position.z = -14;
     next.progression.journeysCompleted = 1;
+    next.progression.activeMissionStage = 1;
     next.statistics.totalEarned = 75;
   });
   assert.equal(saveGameState(state, storage).ok, true);
@@ -37,6 +39,7 @@ test("save and load round-trip real player state", () => {
   assert.equal(loaded.state.player.money, 75);
   assert.equal(loaded.state.player.position.z, -14);
   assert.equal(loaded.state.progression.journeysCompleted, 1);
+  assert.equal(loaded.state.progression.activeMissionStage, 1);
   assert.equal(storage.getItem(SAVE_KEY) !== null, true);
 });
 
