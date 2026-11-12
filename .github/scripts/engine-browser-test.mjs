@@ -59,11 +59,12 @@ async function verifyViewport(name, options = {}) {
   });
   if (!webgl) failures.push(name + ": WebGL 2 context is unavailable");
 
-  await page.locator("#time-of-day").selectOption("sunset");
-  await page.locator("#weather-mode").selectOption("rain");
-  await page.locator("#weather-mode").selectOption("dust");
-  await page.locator("#weather-mode").selectOption("clear");
   await page.locator("#time-of-day").selectOption("night");
+  await page.locator("#weather-mode").selectOption("rain");
+  await page.locator("#time-of-day").selectOption("sunset");
+  await page.locator("#weather-mode").selectOption("dust");
+  await page.locator("#time-of-day").selectOption("day");
+  await page.locator("#weather-mode").selectOption("clear");
   await page.locator("#reset-camera").click();
 
   await page.waitForTimeout(1200);
@@ -71,11 +72,17 @@ async function verifyViewport(name, options = {}) {
     fps: document.querySelector("#fps")?.textContent,
     calls: document.querySelector("#draw-calls")?.textContent,
     triangles: document.querySelector("#triangles")?.textContent,
-    scale: document.querySelector("#render-scale")?.textContent
+    scale: document.querySelector("#render-scale")?.textContent,
+    memory: document.querySelector("#gpu-memory")?.textContent,
+    occluded: document.querySelector("#occlusion-count")?.textContent,
+    collisionPairs: document.querySelector("#collision-pairs")?.textContent
   }));
   if (!metrics.fps || metrics.fps === "—") failures.push(name + ": FPS telemetry missing");
   if (!metrics.calls || metrics.calls === "—") failures.push(name + ": draw-call telemetry missing");
   if (!metrics.triangles || metrics.triangles === "—") failures.push(name + ": triangle telemetry missing");
+  if (!metrics.memory || metrics.memory === "—") failures.push(name + ": GPU texture memory estimate missing");
+  if (metrics.occluded === undefined) failures.push(name + ": occlusion telemetry missing");
+  if (metrics.collisionPairs === undefined) failures.push(name + ": collision broadphase telemetry missing");
 
   console.log(name + " viewport passed: " + JSON.stringify(metrics));
   await context.close();
