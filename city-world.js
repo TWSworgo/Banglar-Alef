@@ -139,59 +139,258 @@ function roadGeometry(THREE, roads) {
   return geometry;
 }
 
-export function buildCityWorld(THREE, parsed, { maxRoads = 5000, maxBuildings = 650 } = {}) {
-  const group = new THREE.Group();
-  group.name = "banglar-alef-uttara-osm-world";
-  const roads = parsed.roads.slice(0, maxRoads);
-  const buildings = parsed.buildings.slice(0, maxBuildings);
-  const roadMat = new THREE.MeshStandardMaterial({ color: 0x343a38, roughness: 0.94, metalness: 0.01 });
-  const groundMat = new THREE.MeshStandardMaterial({ color: 0x77796e, roughness: 1 });
-  const buildingMats = [
-    new THREE.MeshStandardMaterial({ color: 0xb8ad9b, roughness: 0.88 }),
-    new THREE.MeshStandardMaterial({ color: 0xaaaFA7, roughness: 0.9 }),
-    new THREE.MeshStandardMaterial({ color: 0xc0ad98, roughness: 0.87 }),
-    new THREE.MeshStandardMaterial({ color: 0x9daaa6, roughness: 0.86 })
-  ];
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(2600, 2600), groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -0.08;
-  ground.receiveShadow = true;
-  group.add(ground);
+function seeded(id) {
+  let value = Number(id) || 1;
+  value = (value ^ (value >>> 16)) * 0x45d9f3b;
+  value = (value ^ (value >>> 16)) * 0x45d9f3b;
+  return ((value ^ (value >>> 16)) >>> 0) / 4294967295;
+}
 
-  if (roads.length) {
-    const mesh = new THREE.Mesh(roadGeometry(THREE, roads), roadMat);
-    mesh.name = "osm-road-network";
-    mesh.receiveShadow = true;
-    group.add(mesh);
+function pushQuad(positions, uvs, indices, a, b, c, d, uvScale = 1) {
+  const base = positions.length / 3;
+  positions.push(...a, ...b, ...c, ...d);
+  uvs.push(0, 0, uvScale, 0, 0, uvScale, uvScale, uvScale);
+  indices.push(base, base + 1, base + 2, base, base + 2, base + 3);
+}
+
+function makeSurface(THREE, positions, uvs, indices, material, name) {
+  if (!positions.length) return null;
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.name = name;
+  mesh.receiveShadow = true;
+  return mesh;
+}
+
+function buildRoadLayer(THREE, roads, materials) {
+  const roadP = [], roadUv = [], roadI = [];
+  const walkP = [], walkUv = [], walkI = [];
+  const curbP = [], curbUv = [], curbI = [];
+  const dashMatrices = [];
+  const up = new THREE.Vector3(0, 1, 0);
+  const temp = new THREE.Object3D();
+  let segmentCount = 0;
+
+  for (const road of roads) {
+    const half = road.width / 2;
+    const isPath = ["footway", "path", "pedestrian"].includes(road.highway);
+    const walkWidth = isPath ? 0 : Math.max(1.05, Math.min(2.6, road.width * 0.17));
+    for (let i = 0; i < road.points.length - 1; i++) {
+      const a = road.points[i], b = road.points[i + 1];
+      const dx = b.x - a.x, dz = b.z - a.z;
+      const length = Math.hypot(dx, dz);
+      if (length < 1.5) continue;
+      const nx = -dz / length, nz = dx / length;
+      const left = [nx, nz], right = [-nx, -nz];
+      const p = (x, z, y) => [x, y, z];
+      const al = p(a.x + nx * half, a.z + nz * half, 0.045);
+      const ar = p(a.x - nx * half, a.z - nz * half, 0.045);
+      const bl = p(b.x + nx * half, b.z + nz * half, 0.045);
+      const br = p(b.x - nx * half, b.z - nz * half, 0.045);
+      pushQuad(roadP, roadUv, roadI, al, bl, br, ar, length / 7);
+      if (walkWidth) {
+        for (const side of [left, right]) {
+          const outerA = p(a.x + side[0] * (half + walkWidth), a.z + side[1] * (half + walkWidth), 0.025);
+          const outerB = p(b.x + side[0] * (half + walkWidth), b.z + side[1] * (half + walkWidth), 0.025);
+          const innerA = p(a.x + side[0] * (half + 0.16), a.z + side[1] * (half + 0.16), 0.03);
+          const innerB = p(b.x + side[0] * (half + 0.16), b.z + side[1] * (half + 0.16), 0.03);
+          pushQuad(walkP, walkUv, walkI, innerA, innerB, outerB, outerA, length / 4);
+          const curbOuterA = p(a.x + side[0] * (half + 0.2), a.z + side[1] * (half + 0.2), 0.17);
+          const curbOuterB = p(b.x + side[0] * (half + 0.2), b.z + side[1] * (half + 0.2), 0.17);
+          pushQuad(curbP, curbUv, curbI, innerA, innerB, curbOuterB, curbOuterA, length / 8);
+        }
+      }
+      const lanes = Math.max(1, Math.min(4, Number.parseInt(road.tags?.lanes, 10) || (road.width >= 9 ? 2 : 1)));
+      if (lanes >= 2 && road.width >= 6) {
+        const dashLength = 3.2, gap = 4.2;
+        for (let along = 4; along < length - 2; along += dashLength + gap) {
+          const t = along / length;
+          temp.position.set(a.x + dx * t, 0.075, a.z + dz * t);
+          temp.quaternion.setFromUnitVectors(up, new THREE.Vector3(0, 1, 0));
+          temp.rotation.y = -Math.atan2(dz, dx);
+          temp.scale.set(0.12, 1, dashLength);
+          temp.updateMatrix();
+          dashMatrices.push(temp.matrix.clone());
+        }
+      }
+      segmentCount++;
+    }
   }
 
-  let buildingCount = 0;
+  const group = new THREE.Group();
+  group.name = "road-cross-sections-and-street-furniture";
+  for (const [p, uv, idx, mat, name] of [
+    [roadP, roadUv, roadI, materials.asphalt, "continuous-asphalt"],
+    [walkP, walkUv, walkI, materials.sidewalk, "sidewalk-surfaces"],
+    [curbP, curbUv, curbI, materials.curb, "raised-curbs"]
+  ]) {
+    const mesh = makeSurface(THREE, p, uv, idx, mat, name);
+    if (mesh) group.add(mesh);
+  }
+  if (dashMatrices.length) {
+    const geometry = new THREE.BoxGeometry(1, 0.018, 1);
+    const dashes = new THREE.InstancedMesh(geometry, materials.marking, dashMatrices.length);
+    dashMatrices.forEach((matrix, index) => dashes.setMatrixAt(index, matrix));
+    dashes.instanceMatrix.needsUpdate = true;
+    dashes.name = "broken-center-line-markings";
+    group.add(dashes);
+  }
+  return { group, segmentCount, markingCount: dashMatrices.length };
+}
+
+function buildFacadeDetails(THREE, buildings, materials) {
+  const group = new THREE.Group();
+  group.name = "procedural-urban-architecture";
+  const windowGeometry = new THREE.BoxGeometry(1, 1, 0.10);
+  const balconyGeometry = new THREE.BoxGeometry(1, 0.12, 0.48);
+  const windowInstances = [];
+  const balconyInstances = [];
+  const roofInstances = [];
+  const temp = new THREE.Object3D();
+  const forward = new THREE.Vector3(0, 0, 1);
+  let detailedBuildings = 0;
+
   for (const building of buildings) {
+    const points = building.polygon;
+    if (points.length < 3) continue;
     const shape = new THREE.Shape();
-    building.polygon.forEach((point, index) => {
-      if (index === 0) shape.moveTo(point.x, -point.z);
-      else shape.lineTo(point.x, -point.z);
-    });
+    points.forEach((point, index) => index === 0 ? shape.moveTo(point.x, -point.z) : shape.lineTo(point.x, -point.z));
     shape.closePath();
     const geometry = new THREE.ExtrudeGeometry(shape, { depth: building.height, bevelEnabled: false, curveSegments: 1 });
     geometry.rotateX(-Math.PI / 2);
     geometry.computeVertexNormals();
-    const mesh = new THREE.Mesh(geometry, buildingMats[buildingCount % buildingMats.length]);
-    mesh.name = "osm-building-" + building.id;
-    mesh.position.y = 0.02;
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    mesh.userData.osmId = building.id;
-    group.add(mesh);
-    buildingCount++;
+    const tone = seeded(building.id);
+    const facadeIndex = Math.floor(tone * materials.facades.length);
+    const shell = new THREE.Mesh(geometry, materials.facades[facadeIndex]);
+    shell.name = "osm-building-shell-" + building.id;
+    shell.position.y = 0.04;
+    shell.castShadow = true;
+    shell.receiveShadow = true;
+    shell.userData.osmId = building.id;
+    group.add(shell);
+
+    const floorCount = Math.max(1, Math.min(24, Math.round(building.height / 3.15)));
+    const floorHeight = building.height / floorCount;
+    const roof = new THREE.Mesh(new THREE.BoxGeometry(1, 0.22, 1), materials.roof);
+    roof.position.set(
+      points.reduce((s, p) => s + p.x, 0) / points.length,
+      building.height + 0.16,
+      points.reduce((s, p) => s + p.z, 0) / points.length
+    );
+    roof.scale.set(
+      Math.max(1.2, Math.max(...points.map(p => p.x)) - Math.min(...points.map(p => p.x)) + 0.35),
+      1,
+      Math.max(1.2, Math.max(...points.map(p => p.z)) - Math.min(...points.map(p => p.z)) + 0.35)
+    );
+    roof.updateMatrix();
+    roofInstances.push(roof.matrix.clone());
+
+    for (let edge = 0; edge < points.length; edge++) {
+      const a = points[edge], b = points[(edge + 1) % points.length];
+      const dx = b.x - a.x, dz = b.z - a.z;
+      const length = Math.hypot(dx, dz);
+      if (length < 3.8) continue;
+      const outward = new THREE.Vector3(dz / length, 0, -dx / length);
+      const rotation = new THREE.Quaternion().setFromUnitVectors(forward, outward);
+      const windowWidth = 1.05;
+      const columns = Math.max(1, Math.min(12, Math.floor((length - 1.2) / 2.35)));
+      const start = (length - (columns - 1) * 2.35) / 2;
+      for (let floor = 0; floor < floorCount; floor++) {
+        const y = 0.04 + floor * floorHeight + floorHeight * 0.52;
+        for (let column = 0; column < columns; column++) {
+          const along = start + column * 2.35;
+          const x = a.x + dx / length * along + outward.x * 0.065;
+          const z = a.z + dz / length * along + outward.z * 0.065;
+          temp.position.set(x, y, z);
+          temp.quaternion.copy(rotation);
+          temp.scale.set(windowWidth, Math.min(1.55, floorHeight * 0.55), 1);
+          temp.updateMatrix();
+          windowInstances.push(temp.matrix.clone());
+          if (floor > 0 && (column % 2 === 0) && tone > 0.28) {
+            temp.position.set(x, y - floorHeight * 0.22, z);
+            temp.scale.set(1.45, 0.12, 0.48);
+            temp.updateMatrix();
+            balconyInstances.push(temp.matrix.clone());
+          }
+        }
+      }
+    }
+    detailedBuildings++;
   }
+
+  if (windowInstances.length) {
+    const windows = new THREE.InstancedMesh(windowGeometry, materials.glass, windowInstances.length);
+    windowInstances.forEach((matrix, index) => windows.setMatrixAt(index, matrix));
+    windows.instanceMatrix.needsUpdate = true;
+    windows.name = "repeated-facade-window-modules";
+    group.add(windows);
+  }
+  if (balconyInstances.length) {
+    const balconies = new THREE.InstancedMesh(balconyGeometry, materials.balcony, balconyInstances.length);
+    balconyInstances.forEach((matrix, index) => balconies.setMatrixAt(index, matrix));
+    balconies.instanceMatrix.needsUpdate = true;
+    balconies.name = "repeated-balcony-slabs";
+    group.add(balconies);
+  }
+  if (roofInstances.length) {
+    const roofs = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), materials.roof, roofInstances.length);
+    roofInstances.forEach((matrix, index) => roofs.setMatrixAt(index, matrix));
+    roofs.instanceMatrix.needsUpdate = true;
+    roofs.name = "flat-roof-parapets";
+    group.add(roofs);
+  }
+  return { group, detailedBuildings, windows: windowInstances.length, balconies: balconyInstances.length };
+}
+
+export function buildCityWorld(THREE, parsed, { maxRoads = 5000, maxBuildings = 650 } = {}) {
+  const group = new THREE.Group();
+  group.name = "banglar-alef-uttara-realistic-city-world";
+  const roads = parsed.roads.slice(0, maxRoads);
+  const buildings = parsed.buildings.slice(0, maxBuildings);
+  const materials = {
+    asphalt: new THREE.MeshStandardMaterial({ color: 0x343a3b, roughness: 0.96, metalness: 0.01 }),
+    sidewalk: new THREE.MeshStandardMaterial({ color: 0x89877d, roughness: 0.94 }),
+    curb: new THREE.MeshStandardMaterial({ color: 0xb5b1a5, roughness: 0.86 }),
+    marking: new THREE.MeshStandardMaterial({ color: 0xe5dfc8, roughness: 0.72 }),
+    glass: new THREE.MeshStandardMaterial({ color: 0x52717b, roughness: 0.24, metalness: 0.18, emissive: 0x101a1c }),
+    balcony: new THREE.MeshStandardMaterial({ color: 0xc2b9a8, roughness: 0.86 }),
+    roof: new THREE.MeshStandardMaterial({ color: 0x77776d, roughness: 0.92 }),
+    facades: [
+      new THREE.MeshStandardMaterial({ color: 0xc2b8a7, roughness: 0.9 }),
+      new THREE.MeshStandardMaterial({ color: 0xb3b7b0, roughness: 0.91 }),
+      new THREE.MeshStandardMaterial({ color: 0xc7b49f, roughness: 0.89 }),
+      new THREE.MeshStandardMaterial({ color: 0x9eaaa5, roughness: 0.9 }),
+      new THREE.MeshStandardMaterial({ color: 0xb9a69b, roughness: 0.9 })
+    ]
+  };
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(2600, 2600),
+    new THREE.MeshStandardMaterial({ color: 0x777b70, roughness: 1 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.09;
+  ground.receiveShadow = true;
+  ground.name = "terrain-ground";
+  group.add(ground);
+
+  const roadLayer = buildRoadLayer(THREE, roads, materials);
+  group.add(roadLayer.group);
+  const architecture = buildFacadeDetails(THREE, buildings, materials);
+  group.add(architecture.group);
 
   return {
     group,
     counts: {
       roadWays: roads.length,
-      roadSegments: roads.reduce((sum, road) => sum + road.points.length - 1, 0),
-      buildings: buildingCount,
+      roadSegments: roadLayer.segmentCount,
+      buildings: architecture.detailedBuildings,
+      facadeWindows: architecture.windows,
+      balconies: architecture.balconies,
+      roadMarkings: roadLayer.markingCount,
       omittedRoadWays: Math.max(0, parsed.roads.length - roads.length),
       omittedBuildings: Math.max(0, parsed.buildings.length - buildings.length)
     },
