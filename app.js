@@ -101,10 +101,9 @@
       nav.classList.toggle("is-open", !expanded);
     });
 
-    $("#new-game").addEventListener("click", () => openNotice(
-      "প্রথম যাত্রার প্রস্তুতি চলছে",
-      "নতুন গেম শুরু করার আগে CNG vehicle, Dhaka world ও driving systems বাস্তবে তৈরি করতে হবে। এই gameplay module-গুলো সম্পন্ন না হওয়া পর্যন্ত শুরু করার বাটন ইচ্ছাকৃতভাবে বন্ধ রাখা হয়েছে।"
-    ));
+    $("#new-game").addEventListener("click", () => {
+      window.location.href = "./game.html";
+    });
 
     $("#continue-game").addEventListener("click", () => openNotice(
       "কোনো সংরক্ষিত যাত্রা নেই",
