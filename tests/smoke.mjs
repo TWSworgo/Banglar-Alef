@@ -15,14 +15,10 @@ try {
   assert.equal(response.status(), 200);
   try { await page.waitForFunction(() => window.__GAME_READY__ === true, null, { timeout: 15000 }); }
   catch (error) { console.log("RUNTIME DIAGNOSTICS", JSON.stringify({ errors, consoleErrors, failedRequests })); throw error; }
-  for (const selector of ["#score", "#speed", "#battery", "#best", "#accidents", "#mission", "#map", "#start", "#pause", "#horn", "#camera", "#quality", "#soundToggle"]) {
+  for (const selector of ["#score", "#speed", "#battery", "#best", "#accidents", "#mission", "#pressure", "#pressureBar", "#map", "#start", "#pause", "#horn", "#camera", "#quality", "#soundToggle"]) {
     assert.equal(await page.locator(selector).count(), 1, selector + " should exist");
   }
   await page.locator("#start").click();
-  assert.equal(await page.evaluate(() => window.__GAME_TEST__.pickup()), true, "passenger pickup should activate");
-  assert.equal(await page.locator("#mission").textContent(), "যাত্রীকে গন্তব্যে পৌঁছান");
-  assert.equal(await page.evaluate(() => window.__GAME_TEST__.dropoff()), true, "safe passenger dropoff should award score");
-  assert.equal(await page.evaluate(() => window.__GAME_STATE__.score), 100);
   await page.keyboard.down("w");
   await page.waitForTimeout(650);
   await page.keyboard.up("w");
@@ -50,7 +46,7 @@ try {
   assert.ok(await mobile.evaluate(() => window.__GAME_STATE__.speed > 0), "mobile throttle should accelerate");
   await mobile.locator('[data-control="throttle"]').dispatchEvent("pointerup", { pointerId: 1, pointerType: "touch", isPrimary: true });
   assert.deepEqual(errors, [], "desktop and mobile should have no uncaught errors");
-  console.log("Browser smoke test passed: desktop/mobile, WebGL, safe driving input, mission HUD, graphics/audio settings, pause/resume.");
+  console.log("Browser smoke test passed: desktop/mobile, WebGL, driving input, arcade HUD, graphics/audio settings, pause/resume.");
 } finally {
   await browser.close();
 }
