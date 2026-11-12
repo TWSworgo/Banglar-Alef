@@ -60,7 +60,7 @@ function initializeScene() {
 
 async function loadCity() {
   loadButton.disabled = true;
-  status.textContent = fixtureMode ? "Fixture data তৈরি হচ্ছে…" : "Overpass API থেকে OSM data ডাউনলোড হচ্ছে…";
+  status.textContent = fixtureMode ? "Fixture data তৈরি হচ্ছে…" : "দ্রুততম OpenStreetMap সার্ভার থেকে ডেটা আনা হচ্ছে…";
   try {
     const result = fixtureMode ? { data:createFixture(), endpoint:"CI fixture" } : await fetchOSMExtract({ bounds:UTTARA_PILOT.bounds });
     const parsed = parseOSMData(result.data, UTTARA_PILOT.bounds);
