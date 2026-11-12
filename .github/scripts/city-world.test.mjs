@@ -68,7 +68,7 @@ test("OSM fetch applies a bounded timeout when every mirror stalls", async () =>
   });
   await assert.rejects(
     fetchOSMExtract({ fetchImpl, endpoints:["slow-a","slow-b"], timeoutMs:10 }),
-    /দুইটি OpenStreetMap সার্ভার/
+    /সব OpenStreetMap সার্ভার/
   );
 });
 
