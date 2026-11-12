@@ -71,3 +71,17 @@ test("OSM fetch applies a bounded timeout when every mirror stalls", async () =>
     /দুইটি OpenStreetMap সার্ভার/
   );
 });
+
+test("OSM fetch includes a third public mirror after primary mirror failures", async () => {
+  const calls = [];
+  const fetchImpl = async (endpoint) => {
+    calls.push(endpoint);
+    if (endpoint.includes("overpass-api.de") || endpoint.includes("overpass.kumi.systems")) {
+      return { ok:false, status:502 };
+    }
+    return { ok:true, json:async()=>({elements:[]}) };
+  };
+  const result = await fetchOSMExtract({ fetchImpl, timeoutMs:100 });
+  assert.match(result.endpoint,/overpass\.nchc\.org\.tw/);
+  assert.equal(calls.length,3);
+});
