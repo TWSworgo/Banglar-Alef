@@ -11,7 +11,7 @@ try {
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", msg => { if (msg.type() === "error") consoleErrors.push(msg.text()); });
   page.on("requestfailed", req => failedRequests.push(req.url() + " :: " + req.failure()?.errorText));
-  const response = await page.goto("http://127.0.0.1:4173", { waitUntil: "networkidle", timeout: 45000 });
+  const response = await page.goto("http://127.0.0.1:4173/?test=1", { waitUntil: "networkidle", timeout: 45000 });
   assert.equal(response.status(), 200);
   try { await page.waitForFunction(() => window.__GAME_READY__ === true, null, { timeout: 15000 }); }
   catch (error) { console.log("RUNTIME DIAGNOSTICS", JSON.stringify({ errors, consoleErrors, failedRequests })); throw error; }
@@ -19,6 +19,10 @@ try {
     assert.equal(await page.locator(selector).count(), 1, selector + " should exist");
   }
   await page.locator("#start").click();
+  assert.equal(await page.evaluate(() => window.__GAME_TEST__.pickup()), true, "passenger pickup should activate");
+  assert.equal(await page.locator("#mission").textContent(), "যাত্রীকে গন্তব্যে পৌঁছান");
+  assert.equal(await page.evaluate(() => window.__GAME_TEST__.dropoff()), true, "safe passenger dropoff should award score");
+  assert.equal(await page.evaluate(() => window.__GAME_STATE__.score), 100);
   await page.keyboard.down("w");
   await page.waitForTimeout(650);
   await page.keyboard.up("w");
