@@ -1,23 +1,26 @@
 # বাংলার আলেফ
 
-Browser-based 3D Dhaka driving game. The current rebuild uses an original Three.js implementation.
+A browser-based 3D Dhaka city-driving game built with an original Three.js implementation.
 
-## Run
-Open `index.html` through a static web server. Three.js is loaded from jsDelivr, so the first launch needs an internet connection.
+## Gameplay
+- Drive a battery-powered CNG auto through a procedurally generated city.
+- Pick up passengers at green markers and deliver them safely to yellow destinations.
+- Earn points for completed passenger trips; collisions reduce the score and count as accidents.
+- Stop carefully near pickup and drop-off markers.
+- Manage battery charge with roadside charging points.
+- Navigate traffic, traffic lights, pedestrians, buses, trucks, CNGs, vans, SUVs and other vehicles.
+- Use the minimap, camera views, horn, pause menu and graphics/audio settings.
 
 ## Controls
-- Keyboard: WASD or arrow keys
-- Space / Down: brake and reverse
-- Shift: power boost
-- Mobile: on-screen steering, brake, boost and throttle
+- **Keyboard:** W / Arrow Up to accelerate, S / Arrow Down to brake or reverse, A/D or Left/Right to steer.
+- **H:** horn · **C:** change camera · **P:** pause.
+- **Mobile:** on-screen steering, brake and throttle buttons.
 
-## Current systems
-- Third-person CNG driving and camera follow
-- Procedural multi-block city grid, roads, sidewalks, buildings and trees
-- Moving traffic vehicles with basic following and player proximity response
-- Pedestrian population and avoidance response
-- Passenger pickup and drop-off loop, fare and battery HUD
-- Wanted indicator, minimap, in-game clock, pause and restart
-- Responsive touch controls
+## Run locally
+Serve the repository with any static HTTP server and open the local address. Three.js is loaded from jsDelivr, so an internet connection is required on first load.
 
-This is the first playable rebuild, not a verified feature-for-feature parity release. Browser acceptance testing and further system-by-system work are still required.
+## Automated checks
+The GitHub Actions workflow runs a JavaScript syntax check and a Playwright Chromium smoke test on desktop and mobile-sized viewports. The browser test checks WebGL initialization, driving input, HUD, graphics/audio settings and pause/resume.
+
+## Current limitations
+This is an original safe-driving game inspired by Dhaka street traffic, not a feature-for-feature copy of another game. The city is a procedural grid rather than a surveyed Dhaka road network; traffic and pedestrian behavior are simplified; and real-device testing, deeper mission content, accessibility review and performance profiling on lower-end phones remain outstanding. A passing CI smoke test is not a production-readiness certification.
