@@ -14,6 +14,7 @@ let disposed = false, frameNumber = 0, lightingPreset = 'day', weatherPreset = '
 let occlusionCuller, collisionWorld, resourceTracker;
 let occlusionTargets = [], occlusionSources = [];
 let collisionPairCount = 0;
+let hardwareProfile = { mobile: false, lowMemory: false, pixelRatioCap: 1.65, shadowMapSize: 2048, textureSize: 1024, anisotropy: 8 };
 
 const lodObjects = [];
 
@@ -25,7 +26,7 @@ function webglAvailable() {
 }
 
 function makeAsphaltMaps() {
-  const size = 1024;
+  const size = hardwareProfile.textureSize;
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext("2d", { alpha: false });
@@ -43,7 +44,7 @@ function makeAsphaltMaps() {
   map.colorSpace = THREE.SRGBColorSpace;
   map.wrapS = map.wrapT = THREE.RepeatWrapping;
   map.repeat.set(3, 3);
-  map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  map.anisotropy = Math.min(hardwareProfile.anisotropy, renderer.capabilities.getMaxAnisotropy());
   map.minFilter = THREE.LinearMipmapLinearFilter;
   map.magFilter = THREE.LinearFilter;
   const roughCanvas = document.createElement("canvas");
@@ -288,7 +289,7 @@ function createScene() {
   const sun = new THREE.DirectionalLight(0xffe5bd, 3.2);
   sun.position.set(-28, 42, 22);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(hardwareProfile.shadowMapSize, hardwareProfile.shadowMapSize);
   sun.shadow.camera.left = -48;
   sun.shadow.camera.right = 48;
   sun.shadow.camera.top = 48;
@@ -322,14 +323,25 @@ function createScene() {
 let lights;
 function configureRenderer() {
   if (!webglAvailable()) throw new Error("এই browser বা device-এ WebGL 2 পাওয়া যায়নি। Chrome update করে অথবা WebGL support-যুক্ত browser ব্যবহার করে দেখো।");
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance", stencil: false, depth: true });
+  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const mobileViewport = window.innerWidth < 760;
+  const deviceMemory = Number(navigator.deviceMemory || 4);
+  hardwareProfile = {
+    mobile: coarsePointer || mobileViewport,
+    lowMemory: deviceMemory <= 3,
+    pixelRatioCap: deviceMemory <= 3 ? 1 : (coarsePointer || mobileViewport) ? 1.35 : 1.65,
+    shadowMapSize: deviceMemory <= 3 ? 512 : (coarsePointer || mobileViewport) ? 1024 : 2048,
+    textureSize: deviceMemory <= 3 ? 512 : 1024,
+    anisotropy: deviceMemory <= 3 ? 2 : (coarsePointer || mobileViewport) ? 4 : 8
+  };
+  renderer = new THREE.WebGLRenderer({ antialias: !hardwareProfile.lowMemory, alpha: false, powerPreference: "high-performance", stencil: false, depth: true });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.info.autoReset = true;
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, hardwareProfile.pixelRatioCap));
   renderer.setSize(viewport.clientWidth, viewport.clientHeight, false);
   renderer.domElement.setAttribute("aria-label", "Interactive real-time 3D PBR material scene");
   renderer.domElement.addEventListener("webglcontextlost", event => {
@@ -364,7 +376,7 @@ function configureRenderer() {
   resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(viewport);
   updateQualityLabel();
-  $("webgl-status").textContent = "WEBGL 2";
+  $("webgl-status").textContent = hardwareProfile.lowMemory ? "WEBGL 2 · LOW MEMORY" : hardwareProfile.mobile ? "WEBGL 2 · MOBILE" : "WEBGL 2 · DESKTOP";
   $("render-state").textContent = "RENDERING";
   status.remove();
 }
