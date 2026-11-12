@@ -1,10 +1,11 @@
+import { loadGameState } from "./game-core.js";
+
 (() => {
   "use strict";
 
   const $ = (selector, root = document) => root.querySelector(selector);
   const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
   const STORAGE_KEY = "banglar-alef.preferences.v1";
-  const GAME_SAVE_KEY = "banglar-alef.game-save.v1";
   const bootStarted = performance.now();
   const bootScreen = $("#boot-screen");
   const appShell = $("#app-shell");
@@ -89,9 +90,8 @@
   function refreshContinueButton() {
     const button = $("#continue-game");
     const caption = $("#continue-caption");
-    let save = null;
-    try { save = JSON.parse(localStorage.getItem(GAME_SAVE_KEY) || "null"); } catch (_) {}
-    const valid = Boolean(save && save.version === 1 && save.player && Number.isFinite(save.player.money) && save.player.position && Number.isFinite(save.player.position.z));
+    const loaded = loadGameState();
+    const valid = loaded.ok;
     button.disabled = !valid;
     caption.textContent = valid ? "আগের সংরক্ষিত যাত্রা চালিয়ে যাও" : "এখনো কোনো সংরক্ষিত যাত্রা নেই";
   }
