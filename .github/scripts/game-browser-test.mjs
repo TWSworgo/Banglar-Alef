@@ -9,6 +9,7 @@ try{
   const response=await page.goto("http://127.0.0.1:4173/game.html",{waitUntil:"domcontentloaded",timeout:30000});
   if(!response?.ok())failures.push("game page did not return HTTP 200");
   await page.waitForSelector("#world canvas",{timeout:45000});
+  if(await page.locator("#error-panel").isVisible()) throw new Error("Gameplay boot failed: "+await page.locator("#error-text").textContent()+"; console: "+errors.join(" | "));
   const canvas=page.locator("#world canvas");
   if(!(await canvas.isVisible()))failures.push("game canvas is not visible");
   const webgl=await canvas.evaluate(el=>Boolean(el.getContext("webgl2")));
