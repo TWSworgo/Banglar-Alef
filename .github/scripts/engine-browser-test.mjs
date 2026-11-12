@@ -78,14 +78,22 @@ async function verifyViewport(name, options = {}) {
   };
   const gltfDataUrl = "data:model/gltf+json;base64," + Buffer.from(JSON.stringify(gltfFixture)).toString("base64");
   const loadedAsset = await page.evaluate(async dataUrl => {
-    const module = await import("./engine.js");
-    if (!module.assetPipeline) return { count: 0, boundsReady: false };
-    const asset = await module.assetPipeline.loadGLTF(dataUrl);
-    const meshes = [];
-    asset.scene.traverse(object => { if (object.isMesh) meshes.push(object); });
-    return { count: meshes.length, boundsReady: meshes.every(mesh => Boolean(mesh.geometry.boundingBox && mesh.geometry.boundingSphere)) };
+    try {
+      const module = await import("./engine.js");
+      if (!module.assetPipeline) return { count: 0, boundsReady: false, error: "asset pipeline is null" };
+      const asset = await Promise.race([
+        module.assetPipeline.loadGLTF(dataUrl),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("glTF fixture load timed out")), 12000))
+      ]);
+      const meshes = [];
+      asset.scene.traverse(object => { if (object.isMesh) meshes.push(object); });
+      module.assetPipeline.release(dataUrl);
+      return { count: meshes.length, boundsReady: meshes.every(mesh => Boolean(mesh.geometry.boundingBox && mesh.geometry.boundingSphere)) };
+    } catch (error) {
+      return { count: 0, boundsReady: false, error: error.message };
+    }
   }, gltfDataUrl);
-  if (loadedAsset.count !== 1 || !loadedAsset.boundsReady) failures.push(name + ": glTF fixture failed to load or prepare geometry bounds");
+  if (loadedAsset.count !== 1 || !loadedAsset.boundsReady) failures.push(name + ": glTF fixture failed: " + (loadedAsset.error || "geometry bounds missing"));
 
   const canvas = page.locator("#viewport canvas");
   if (!(await canvas.isVisible())) failures.push(name + ": WebGL canvas is not visible");
