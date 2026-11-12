@@ -194,6 +194,21 @@
       });
   }
 
+  let runtimeErrorShown = false;
+  window.addEventListener("error", event => {
+    console.error("Runtime error:", event.error || event.message);
+    if (!runtimeErrorShown && !dialog.hidden) return;
+    runtimeErrorShown = true;
+    openNotice("একটি সমস্যা হয়েছে", "ওয়েবসাইটের একটি অংশ ঠিকভাবে কাজ করেনি। পেজটি refresh করে আবার চেষ্টা করো। সমস্যাটি থাকলে development team-কে জানাও।");
+  });
+  window.addEventListener("unhandledrejection", event => {
+    console.error("Unhandled application promise:", event.reason);
+    if (!runtimeErrorShown) {
+      runtimeErrorShown = true;
+      openNotice("একটি কাজ সম্পন্ন করা যায়নি", "একটি background operation ব্যর্থ হয়েছে। পেজটি refresh করে আবার চেষ্টা করো।");
+    }
+  });
+
   loadPreferences();
   bindEvents();
   startBoot();
