@@ -5,13 +5,16 @@ const browser = await chromium.launch({
   headless: true,
   args: ["--enable-webgl", "--ignore-gpu-blocklist", "--use-gl=angle", "--use-angle=swiftshader"]
 });
-const errors = [];
+const errors = [], consoleErrors = [], failedRequests = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
   page.on("pageerror", error => errors.push(error.message));
+  page.on("console", msg => { if (msg.type() === "error") consoleErrors.push(msg.text()); });
+  page.on("requestfailed", req => failedRequests.push(req.url() + " :: " + req.failure()?.errorText));
   const response = await page.goto("http://127.0.0.1:4173", { waitUntil: "networkidle", timeout: 45000 });
   assert.equal(response.status(), 200, "game page should load");
-  await page.waitForFunction(() => window.__GAME_READY__ === true, null, { timeout: 30000 });
+  try { await page.waitForFunction(() => window.__GAME_READY__ === true, null, { timeout: 15000 }); }
+  catch (error) { console.log("RUNTIME DIAGNOSTICS", JSON.stringify({ errors, consoleErrors, failedRequests, html: await page.locator("body").innerText() })); throw error; }
   for (const selector of ["#loss", "#battery", "#best", "#anger", "#map", "#start", "#pause", "#horn", "#bomb", "#camera"]) {
     assert.equal(await page.locator(selector).count(), 1, selector + " should exist");
   }
