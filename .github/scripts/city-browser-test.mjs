@@ -18,6 +18,7 @@ try {
     canvas:!!document.querySelector("#city-viewport canvas")
   }));
   if(result.diagnostics.roadWays!==2 || result.diagnostics.buildings!==1) throw new Error("OSM fixture conversion counts are wrong: "+JSON.stringify(result));
+  if(result.diagnostics.facadeWindows<1 || result.diagnostics.roadMarkings<1) throw new Error("Procedural facade or road-detail geometry is missing: "+JSON.stringify(result));
   if(!result.canvas || !result.roadSegments || !result.status.includes("লোড সম্পন্ন")) throw new Error("3D city lab did not finish rendering");
   if(errors.length) throw new Error(errors.join("; "));
   console.log("Mobile viewport OSM-to-3D city acceptance passed: "+JSON.stringify(result));
