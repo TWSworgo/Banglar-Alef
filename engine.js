@@ -1,5 +1,6 @@
 import { CollisionWorld, OcclusionCuller, ResourceTracker, estimateTextureMemoryBytes } from './engine-systems.js';
 
+export let assetPipeline = null;
 let THREE, OrbitControls, RoomEnvironment, clock;
 
 const $ = id => document.getElementById(id);
@@ -550,6 +551,8 @@ function disposeRenderer() {
   collisionWorld = null;
   occlusionTargets.length = 0;
   occlusionSources.length = 0;
+  assetPipeline?.dispose();
+  assetPipeline = null;
   if (resourceTracker) {
     resourceTracker.trackScene(scene);
     resourceTracker.track(environmentMap);
@@ -581,6 +584,13 @@ async function start() {
     RoomEnvironment = environmentModule.RoomEnvironment;
     clock = new THREE.Clock();
     configureRenderer();
+    try {
+      assetPipeline = await createThreeAssetPipeline(renderer);
+      $("asset-pipeline-status").textContent = "GLTF · DRACO · KTX2 READY";
+    } catch (assetError) {
+      $("asset-pipeline-status").textContent = "GLTF LOADER UNAVAILABLE";
+      console.warn("Optional compressed asset pipeline unavailable:", assetError);
+    }
     setWeather($("weather-mode").value);
     animationFrame = requestAnimationFrame(animate);
   } catch (error) {
