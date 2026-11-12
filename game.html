@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#09130f">
+  <title>বাংলার আলেফ — প্রথম যাত্রা</title>
+  <link rel="icon" href="./assets/brand-mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./game.css">
+  <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}</script>
+  <script type="module" src="./game.js"></script>
+</head>
+<body>
+  <main id="game-root">
+    <div id="world" aria-label="বাংলার আলেফ 3D gameplay"></div>
+    <header class="hud-top">
+      <a class="game-brand" href="./index.html">বাংলার আলেফ <small>প্রথম যাত্রা</small></a>
+      <div class="hud-values"><span>৳ <b id="money">০</b></span><span>BATTERY <b id="battery">১০০%</b></span></div>
+      <button id="pause" class="pause-button" aria-label="গেম Pause">Ⅱ</button>
+    </header>
+    <section class="hud-bottom">
+      <div class="mission"><small id="mission-label">প্রথম যাত্রা</small><strong id="mission-text">CNG চালিয়ে সামনে এগিয়ে যাও</strong></div>
+      <div class="speed"><strong id="speed">০</strong><small>km/h</small></div>
+    </section>
+    <div id="toast" role="status" aria-live="polite">W / ↑ চাপো অথবা ড্রাইভ কন্ট্রোল ব্যবহার করো</div>
+    <div class="touch-controls" aria-label="মোবাইল ড্রাইভিং কন্ট্রোল">
+      <div class="steering">
+        <button data-control="left" aria-label="বামে">◀</button>
+        <button data-control="right" aria-label="ডানে">▶</button>
+      </div>
+      <div class="pedals">
+        <button data-control="brake" class="brake">ব্রেক</button>
+        <button data-control="forward" class="accelerate">গতি</button>
+      </div>
+    </div>
+    <div id="pause-panel" class="overlay" hidden>
+      <div class="panel"><p class="eyebrow">PAUSED</p><h1>যাত্রা থামানো হয়েছে</h1><button id="resume">আবার চালাও</button><a href="./index.html">মূল মেনু</a></div>
+    </div>
+    <div id="error-panel" class="overlay" hidden>
+      <div class="panel"><h1>গেম চালু করা যায়নি</h1><p id="error-text">এই ব্রাউজারে WebGL চালু আছে কি না পরীক্ষা করো।</p><a href="./index.html">মূল মেনুতে ফিরুন</a></div>
+    </div>
+  </main>
+</body>
+</html>
