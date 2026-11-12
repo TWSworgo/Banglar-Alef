@@ -47,8 +47,11 @@ async function verifyViewport(name, options = {}) {
 
   await page.waitForFunction(() => {
     const fps = document.querySelector("#fps")?.textContent;
-    return fps && fps !== "—";
-  }, { timeout: 15000 });
+    const assets = document.querySelector("#asset-pipeline-status")?.textContent;
+    return fps && fps !== "—" && assets && assets !== "INITIALIZING";
+  }, { timeout: 30000 });
+  const assetStatus = await page.locator("#asset-pipeline-status").textContent();
+  if (!assetStatus?.includes("READY")) failures.push(name + ": compressed glTF asset pipeline did not initialize");
 
   const canvas = page.locator("#viewport canvas");
   if (!(await canvas.isVisible())) failures.push(name + ": WebGL canvas is not visible");
