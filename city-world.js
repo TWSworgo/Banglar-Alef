@@ -17,11 +17,12 @@ export function buildOverpassQuery(bounds = UTTARA_PILOT.bounds) {
   return `[out:json][timeout:35];(way["highway"](${box});way["building"](${box}););out geom;`;
 }
 
-export async function fetchOSMExtract({ bounds = UTTARA_PILOT.bounds, fetchImpl = fetch, endpoints, signal, timeoutMs = 12000 } = {}) {
+export async function fetchOSMExtract({ bounds = UTTARA_PILOT.bounds, fetchImpl = fetch, endpoints, signal, timeoutMs = 30000 } = {}) {
   const query = buildOverpassQuery(bounds);
   const mirrors = endpoints || [
     "https://overpass-api.de/api/interpreter",
-    "https://overpass.kumi.systems/api/interpreter"
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.nchc.org.tw/api/interpreter"
   ];
   if (!mirrors.length) throw new Error("No OpenStreetMap servers are configured.");
   const controllers = [];
@@ -57,7 +58,7 @@ export async function fetchOSMExtract({ bounds = UTTARA_PILOT.bounds, fetchImpl 
     return await Promise.any(attempts);
   } catch (error) {
     const reasons = error.errors || [error];
-    throw new Error("দুইটি OpenStreetMap সার্ভার থেকেই দ্রুত ডেটা পাওয়া যায়নি। কিছুক্ষণ পর আবার চেষ্টা করুন। (" + reasons.map(item => item.message).join("; ") + ")");
+    throw new Error("সব OpenStreetMap সার্ভার থেকেই দ্রুত ডেটা পাওয়া যায়নি। কিছুক্ষণ পর আবার চেষ্টা করুন। (" + reasons.map(item => item.message).join("; ") + ")");
   } finally {
     controllers.forEach(controller => controller.abort());
   }
