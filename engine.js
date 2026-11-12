@@ -256,7 +256,6 @@ function addCalibrationObjects(materials) {
   ring.rotation.x = Math.PI / 2;
   high.add(ring);
   high.position.set(-24, 1.2, -15);
-  high.userData.occludee = true;
   scene.add(high);
 
   const low = new THREE.Group();
