@@ -6,7 +6,7 @@ const ui={
  overlay:$("overlay"),start:$("start"),pause:$("pause"),pausePanel:$("pausePanel"),resume:$("resume"),restart:$("restart"),
  endPanel:$("endPanel"),again:$("again"),endTitle:$("endTitle"),endText:$("endText"),finalLoss:$("finalLoss"),finalBest:$("finalBest"),finalCrashes:$("finalCrashes"),
  loss:$("loss"),combo:$("combo"),battery:$("battery"),batteryBar:$("batteryBar"),best:$("best"),anger:$("anger"),angerBar:$("angerBar"),
- hint:$("hint"),clock:$("clock"),toast:$("toast"),behind:$("behind"),horn:$("horn"),bomb:$("bomb"),camera:$("camera")
+ hint:$("hint"),clock:$("clock"),toast:$("toast"),behind:$("behind"),horn:$("horn"),bomb:$("bomb"),jump:$("jump"),camera:$("camera"),quality:$("quality"),soundToggle:$("soundToggle")
 };
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);
@@ -147,7 +147,7 @@ for(let i=0;i<9;i++){
 }
 const chasers=[];let cameraMode=0;
 const cameraOffsets=[new THREE.Vector3(0,6.2,-10),new THREE.Vector3(0,2.7,-3.8),new THREE.Vector3(0,12,-17)];
-const state={running:false,paused:false,over:false,speed:0,yaw:0,battery:100,loss:0,best:Number(localStorage.getItem("ba_best")||0),anger:0,combo:1,comboTimer:0,crashes:0,time:8.5,toastTimer:0,trafficClock:0,hornCooldown:0,bombCooldown:0,collisionCooldown:0,chargeTimer:0};
+const state={running:false,paused:false,over:false,speed:0,yaw:0,battery:100,loss:0,best:Number(localStorage.getItem("ba_best")||0),anger:0,combo:1,comboTimer:0,crashes:0,time:8.5,toastTimer:0,trafficClock:0,hornCooldown:0,bombCooldown:0,collisionCooldown:0,chargeTimer:0,jumpTime:0,jumpCooldown:0,muted:false,quality:localStorage.getItem("ba_quality")||"medium"};
 const keys={},controls={left:false,right:false,throttle:false,brake:false,boost:false};
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function toast(message){ui.toast.textContent=message;ui.toast.classList.add("show");state.toastTimer=2.3}
@@ -168,10 +168,24 @@ function soundBomb(){
  toast("শব্দবোমা! জনতা ছত্রভঙ্গ — চার্জ −৮%");
 }
 function cycleCamera(){cameraMode=(cameraMode+1)%cameraOffsets.length;toast(["পেছনের ক্যামেরা","ড্রাইভার ভিউ","উপরের ক্যামেরা"][cameraMode])}
-ui.horn.onclick=horn;ui.bomb.onclick=soundBomb;ui.camera.onclick=cycleCamera;
+function jump(){
+ if(!state.running||state.paused||state.over||state.jumpCooldown>0)return;
+ state.jumpTime=.62;state.jumpCooldown=2.1;tone(190,.12,"triangle",.04);toast("লাফ!");
+}
+function applyQuality(value){
+ state.quality=value;try{localStorage.setItem("ba_quality",value)}catch{}
+ renderer.shadowMap.enabled=value==="high";sun.castShadow=value==="high";
+ renderer.setPixelRatio(Math.min(devicePixelRatio,value==="high"?1.5:value==="medium"?1.25:1));
+ scene.fog.near=value==="low"?80:105;scene.fog.far=value==="low"?260:360;
+ if(ui.quality)ui.quality.value=value;
+}
+ui.horn.onclick=horn;ui.bomb.onclick=soundBomb;ui.jump.onclick=jump;ui.camera.onclick=cycleCamera;
+ui.soundToggle.onclick=()=>{state.muted=!state.muted;ui.soundToggle.textContent=state.muted?"শব্দ: বন্ধ":"শব্দ: চালু";if(!state.muted)tone(520,.08,"sine",.025)};
+ui.quality.onchange=()=>applyQuality(ui.quality.value);
+applyQuality(state.quality);ui.soundToggle.textContent="শব্দ: চালু";
 addEventListener("keydown",e=>{
  keys[e.key.toLowerCase()]=true;if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key))e.preventDefault();
- if(e.key.toLowerCase()==="p")togglePause();if(e.key.toLowerCase()==="h")horn();if(e.key.toLowerCase()==="x")soundBomb();if(e.key.toLowerCase()==="c")cycleCamera();
+ if(e.key.toLowerCase()==="p")togglePause();if(e.key.toLowerCase()==="h")horn();if(e.key.toLowerCase()==="b"||e.key.toLowerCase()==="x")soundBomb();if(e.key.toLowerCase()==="c")cycleCamera();if(e.code==="Space")jump();
 });
 addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
 document.querySelectorAll("[data-control]").forEach(button=>{
@@ -202,7 +216,7 @@ function updatePlayer(dt){
  const old=player.position.clone();player.position.x+=Math.sin(state.yaw)*state.speed*dt;player.position.z+=Math.cos(state.yaw)*state.speed*dt;
  player.position.x=clamp(player.position.x,-HALF-10,HALF+10);player.position.z=clamp(player.position.z,-HALF-10,HALF+10);
  if(Math.abs(state.speed)>1)state.battery=Math.max(0,state.battery-(.06+Math.abs(state.speed)*.004+(boost?.35:0))*dt);
- if(state.collisionCooldown>0)state.collisionCooldown-=dt;if(state.hornCooldown>0)state.hornCooldown-=dt;if(state.bombCooldown>0)state.bombCooldown-=dt;
+ if(state.collisionCooldown>0)state.collisionCooldown-=dt;if(state.hornCooldown>0)state.hornCooldown-=dt;if(state.bombCooldown>0)state.bombCooldown-=dt;if(state.jumpCooldown>0)state.jumpCooldown-=dt;if(state.jumpTime>0){state.jumpTime=Math.max(0,state.jumpTime-dt);player.position.y=Math.sin((1-state.jumpTime/.62)*Math.PI)*1.35}else player.position.y=0;
  if(state.comboTimer>0)state.comboTimer-=dt;else state.combo=1;
  for(const t of traffic){const dx=player.position.x-t.mesh.position.x,dz=player.position.z-t.mesh.position.z;if(dx*dx+dz*dz<9){player.position.copy(old);impact("vehicle",120+Math.round(Math.abs(state.speed)*8));break}}
  for(const o of obstacles){const dx=player.position.x-o.x,dz=player.position.z-o.z;if(dx*dx+dz*dz<(o.r+1.15)**2){player.position.copy(old);if(Math.abs(state.speed)>4)impact("building",70);state.speed*=.2;break}}
@@ -254,7 +268,7 @@ function drawMap(){
  const px=90+player.position.x/(HALF*2)*180,pz=90+player.position.z/(HALF*2)*180;map.fillStyle="#ffca35";map.beginPath();map.arc(px,pz,4,0,Math.PI*2);map.fill();
 }
 function reset(){
- player.position.set(0,0,0);state.speed=0;state.yaw=0;player.rotation.y=0;state.battery=100;state.loss=0;state.anger=0;state.combo=1;state.comboTimer=0;state.crashes=0;state.time=8.5;state.over=false;state.chargeTimer=0;state.collisionCooldown=0;
+ player.position.set(0,0,0);state.speed=0;state.yaw=0;player.rotation.y=0;state.battery=100;state.loss=0;state.anger=0;state.combo=1;state.comboTimer=0;state.crashes=0;state.time=8.5;state.over=false;state.chargeTimer=0;state.collisionCooldown=0;state.jumpTime=0;state.jumpCooldown=0;player.position.y=0;
  chasers.forEach(c=>scene.remove(c.mesh));chasers.length=0;chargers.forEach(c=>c.cooldown=0);
  traffic.forEach((t,i)=>{const axis=t.axis==="x"?"x":"z";t.mesh.position[axis]=(i%2?1:-1)*(30+(i*19)%180);t.speed=t.base});
  ui.endPanel.classList.add("hidden");ui.pausePanel.classList.add("hidden");ui.behind.classList.add("hidden");updateHud();drawMap();
