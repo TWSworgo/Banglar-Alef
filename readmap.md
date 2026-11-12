@@ -443,3 +443,14 @@
 - Added deterministic per-building facade variation so the same OSM extract produces a stable visual result.
 - Added diagnostics for generated facade windows and road markings; the browser acceptance test now checks that both detail systems produce geometry.
 - These are procedural visual reconstructions, not surveyed facade replicas. OSM does not provide reliable window layouts, balcony positions, materials or complete building heights. Exact real-building appearance still requires licensed street-level imagery, photogrammetry/3D scans or authored/verified assets. This commit does not claim photorealistic completion of Uttara or all Dhaka.
+
+
+## Playable Game Build — 2026-11-12
+
+- Added `game.html`, `game.css`, and `game.js` as the first integrated gameplay entry point.
+- Main Menu **New Game** now opens `game.html`; the button is no longer disabled.
+- Reuses the existing procedural CNG showcase model and adds a bounded driving scene with asphalt road, shoulders, lane markings, roadside props and simple ambient traffic.
+- Added keyboard driving (WASD / arrow keys), mobile touch steering / accelerator / brake, chase camera, speed display, battery drain, pause/resume and a first passenger-stop/fare progression trigger.
+- Added Playwright browser acceptance for WebGL canvas, keyboard movement, battery update, pause/resume and Main Menu → New Game navigation.
+- Source validation and existing engine/city unit tests passed for the first integrated build. Full browser acceptance and deployment are being checked.
+- **Known prototype limits:** this is a short, procedural first-playable slice, not a photorealistic Dhaka map. Traffic is simple scripted movement, collision handling is not integrated, passenger pickup/destination logic is a basic scripted trigger, Continue/Save is not implemented, and actual Android device testing remains outstanding. OSM live import is not a dependency for starting this first gameplay scene.
