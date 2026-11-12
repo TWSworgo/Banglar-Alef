@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="বাংলার আলেফ brand mark">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d8efad"/><stop offset="1" stop-color="#83b95b"/></linearGradient></defs>
+  <rect width="128" height="128" rx="30" fill="#14251a"/>
+  <path d="M18 91h92" stroke="#476246" stroke-width="3" stroke-linecap="round"/>
+  <path d="M27 78V51l9-12h54l11 12v27" fill="none" stroke="url(#g)" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M39 43h48v28H39z" fill="#263f2b" stroke="#cce5a6" stroke-width="3"/>
+  <path d="M46 48h34v18H46z" fill="#759a68"/>
+  <path d="M23 76h82v10H23z" fill="url(#g)"/>
+  <circle cx="43" cy="91" r="9" fill="#101a13" stroke="#b8d99a" stroke-width="4"/>
+  <circle cx="85" cy="91" r="9" fill="#101a13" stroke="#b8d99a" stroke-width="4"/>
+  <path d="M63 12v17" stroke="#e5b36f" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="63" cy="10" r="4" fill="#e5b36f"/>
+</svg>
