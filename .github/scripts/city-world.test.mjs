@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { UTTARA_PILOT, buildOverpassQuery, projectCoordinates, getRoadWidth, parseOSMData } from "../../city-world.js";
+import { UTTARA_PILOT, buildOverpassQuery, projectCoordinates, getRoadWidth, parseOSMData, fetchOSMExtract } from "../../city-world.js";
 
 test("Uttara pilot bounds generate a bounded OSM roads and buildings query", () => {
   const query = buildOverpassQuery();
@@ -46,4 +46,28 @@ test("OSM parser rejects malformed data and ignores unusable geometry", () => {
   const parsed = parseOSMData({elements:[{type:"way",id:1,tags:{highway:"residential"},geometry:[{lat:1,lon:2}]}]});
   assert.equal(parsed.roads.length,0);
   assert.equal(parsed.buildings.length,0);
+});
+
+test("OSM fetch races mirrors and returns the first healthy response", async () => {
+  const calls = [];
+  const fetchImpl = (endpoint, options) => {
+    calls.push(endpoint);
+    if (endpoint === "slow") return new Promise((resolve, reject) => {
+      options.signal.addEventListener("abort", () => reject(new Error("aborted")), { once: true });
+    });
+    return Promise.resolve({ ok:true, json:async()=>({elements:[]}) });
+  };
+  const result = await fetchOSMExtract({ fetchImpl, endpoints:["slow","fast"], timeoutMs:100 });
+  assert.equal(result.endpoint,"fast");
+  assert.deepEqual(calls.sort(),["fast","slow"]);
+});
+
+test("OSM fetch applies a bounded timeout when every mirror stalls", async () => {
+  const fetchImpl = (_endpoint, options) => new Promise((resolve, reject) => {
+    options.signal.addEventListener("abort", () => reject(new Error("aborted")), { once:true });
+  });
+  await assert.rejects(
+    fetchOSMExtract({ fetchImpl, endpoints:["slow-a","slow-b"], timeoutMs:10 }),
+    /দুইটি OpenStreetMap সার্ভার/
+  );
 });
