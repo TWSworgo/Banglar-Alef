@@ -148,12 +148,17 @@ function addGround(materials) {
     scene.add(walk);
   }
   const lineMaterial = new THREE.MeshStandardMaterial({ color: 0xe5dfbb, roughness: 0.75 });
-  for (let z = -78; z < 82; z += 12) {
-    const dash = new THREE.Mesh(new THREE.PlaneGeometry(0.18, 5), lineMaterial);
-    dash.rotation.x = -Math.PI / 2;
-    dash.position.set(0, 0.012, z);
-    scene.add(dash);
+  const dashCount = 14;
+  const dashes = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.18, 5), lineMaterial, dashCount);
+  const dashTransform = new THREE.Object3D();
+  for (let i = 0, z = -78; z < 82; z += 12, i++) {
+    dashTransform.rotation.set(-Math.PI / 2, 0, 0);
+    dashTransform.position.set(0, 0.012, z);
+    dashTransform.updateMatrix();
+    dashes.setMatrixAt(i, dashTransform.matrix);
   }
+  dashes.instanceMatrix.needsUpdate = true;
+  scene.add(dashes);
 }
 
 function addMaterialStudy(materials) {
