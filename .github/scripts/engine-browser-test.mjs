@@ -68,6 +68,31 @@ async function verifyViewport(name, options = {}) {
   await page.locator("#reset-camera").click();
 
   await page.waitForTimeout(1200);
+  const occlusionWorks = await page.evaluate(async () => {
+    const THREE = await import("three");
+    const { OcclusionCuller } = await import("./engine-systems.js");
+    const testCamera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+    testCamera.position.set(0, 0, 5);
+    testCamera.lookAt(0, 0, 0);
+    testCamera.updateMatrixWorld();
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 0.2), new THREE.MeshBasicMaterial());
+    wall.position.z = 1;
+    const target = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 12), new THREE.MeshBasicMaterial());
+    target.position.z = 0;
+    const testScene = new THREE.Scene();
+    testScene.add(wall, target);
+    const culler = new OcclusionCuller(THREE, testCamera, { intervalFrames: 1, maxRaysPerFrame: 20 });
+    culler.setOccluders([wall]);
+    culler.register(target);
+    culler.update();
+    const hidden = target.visible === false && culler.occludedCount === 1;
+    culler.dispose();
+    wall.geometry.dispose(); wall.material.dispose();
+    target.geometry.dispose(); target.material.dispose();
+    return hidden;
+  });
+  if (!occlusionWorks) failures.push(name + ": occlusion culler did not reject a fully hidden object");
+
   const metrics = await page.evaluate(() => ({
     fps: document.querySelector("#fps")?.textContent,
     calls: document.querySelector("#draw-calls")?.textContent,
@@ -82,7 +107,7 @@ async function verifyViewport(name, options = {}) {
   if (!metrics.triangles || metrics.triangles === "—" || Number(metrics.triangles.replaceAll(",", "")) <= 0) failures.push(name + ": no triangles were rendered");
   if (!metrics.memory || metrics.memory === "—") failures.push(name + ": GPU texture memory estimate missing");
   if (metrics.occluded === undefined) failures.push(name + ": occlusion telemetry missing");
-  if (metrics.collisionPairs === undefined) failures.push(name + ": collision broadphase telemetry missing");
+  if (metrics.collisionPairs === undefined || Number(metrics.collisionPairs) <= 0) failures.push(name + ": collision broadphase did not register overlapping scene colliders");
 
   console.log(name + " viewport passed: " + JSON.stringify(metrics));
   await context.close();
