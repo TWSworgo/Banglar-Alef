@@ -13,7 +13,7 @@ let renderer, scene, camera, controls, resizeObserver, animationFrame, environme
 let lastFrame = performance.now(), fpsFrames = 0, fpsStart = lastFrame;
 let adaptiveScale = 1, qualityTier = "AUTO";
 let disposed = false, frameNumber = 0, lightingPreset = 'day', weatherPreset = 'clear';
-let occlusionCuller, collisionWorld, resourceTracker;
+let occlusionCuller, collisionWorld, resourceTracker, showcase;
 let occlusionTargets = [], occlusionSources = [];
 let collisionPairCount = 0;
 let hardwareProfile = { mobile: false, lowMemory: false, pixelRatioCap: 1.65, shadowMapSize: 2048, textureSize: 1024, anisotropy: 8 };
@@ -276,9 +276,9 @@ function createScene() {
   scene.background = new THREE.Color(0x9db7bd);
   scene.fog = new THREE.Fog(0x9db7bd, 65, 230);
   camera = new THREE.PerspectiveCamera(48, 1, 0.1, 650);
-  camera.position.set(25, 18, 32);
+  camera.position.set(8.5, 5.8, 10.5);
   controls = new OrbitControls(camera, viewport);
-  controls.target.set(0, 1.2, -7);
+  controls.target.set(0, 1.05, 0);
   controls.enableDamping = true;
   controls.dampingFactor = 0.055;
   controls.minDistance = 9;
@@ -308,16 +308,10 @@ function createScene() {
 
   const materials = createMaterialSet();
   addGround(materials);
-  addMaterialStudy(materials);
-  addCalibrationObjects(materials);
+  showcase = buildDhakaShowcase(THREE, scene, materials);
   const water = addWaterFeature();
   const dust = addAtmosphere();
   const rain = addRain();
-
-  const ambient = new THREE.Mesh(new THREE.SphereGeometry(0.55, 32, 24), new THREE.MeshStandardMaterial({ color: 0xd5e4cb, roughness: 0.25 }));
-  ambient.position.set(0, 1.1, 4);
-  ambient.castShadow = true;
-  scene.add(ambient);
 
   return { sun, hemi, fill, water, dust, rain };
 }
@@ -331,12 +325,12 @@ function configureRenderer() {
   hardwareProfile = {
     mobile: coarsePointer || mobileViewport,
     lowMemory: deviceMemory <= 3,
-    pixelRatioCap: deviceMemory <= 3 ? 1 : (coarsePointer || mobileViewport) ? 1.35 : 1.65,
-    shadowMapSize: deviceMemory <= 3 ? 512 : (coarsePointer || mobileViewport) ? 1024 : 2048,
-    textureSize: deviceMemory <= 3 ? 512 : 1024,
-    anisotropy: deviceMemory <= 3 ? 2 : (coarsePointer || mobileViewport) ? 4 : 8
+    pixelRatioCap: deviceMemory <= 3 ? 0.95 : (coarsePointer || mobileViewport) ? 1.15 : 1.55,
+    shadowMapSize: deviceMemory <= 3 ? 512 : (coarsePointer || mobileViewport) ? 512 : 2048,
+    textureSize: deviceMemory <= 3 || coarsePointer || mobileViewport ? 512 : 1024,
+    anisotropy: deviceMemory <= 3 || coarsePointer || mobileViewport ? 2 : 8
   };
-  renderer = new THREE.WebGLRenderer({ antialias: !hardwareProfile.lowMemory, alpha: false, powerPreference: "high-performance", stencil: false, depth: true });
+  renderer = new THREE.WebGLRenderer({ antialias: !hardwareProfile.mobile && !hardwareProfile.lowMemory, alpha: false, powerPreference: "high-performance", stencil: false, depth: true });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.08;
@@ -603,8 +597,8 @@ $("time-of-day").addEventListener("change", event => setLightingPreset(event.tar
 $("weather-mode").addEventListener("change", event => setWeather(event.target.value));
 $("reset-camera").addEventListener("click", () => {
   if (!camera || !controls) return;
-  camera.position.set(25, 18, 32);
-  controls.target.set(0, 1.2, -7);
+  camera.position.set(8.5, 5.8, 10.5);
+  controls.target.set(0, 1.05, 0);
   controls.update();
 });
 
