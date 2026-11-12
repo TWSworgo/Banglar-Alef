@@ -15,7 +15,7 @@ try {
   assert.equal(response.status(), 200, "game page should load");
   try { await page.waitForFunction(() => window.__GAME_READY__ === true, null, { timeout: 15000 }); }
   catch (error) { console.log("RUNTIME DIAGNOSTICS", JSON.stringify({ errors, consoleErrors, failedRequests, html: await page.locator("body").innerText() })); throw error; }
-  for (const selector of ["#loss", "#battery", "#best", "#anger", "#map", "#start", "#pause", "#horn", "#bomb", "#camera"]) {
+  for (const selector of ["#loss", "#battery", "#best", "#anger", "#map", "#start", "#pause", "#horn", "#shout", "#camera"]) {
     assert.equal(await page.locator(selector).count(), 1, selector + " should exist");
   }
   await page.locator("#start").click();
@@ -24,7 +24,7 @@ try {
   await page.keyboard.up("w");
   assert.ok(await page.evaluate(() => window.__GAME_STATE__.speed > 0), "vehicle should accelerate");
   await page.keyboard.press("h");
-  await page.keyboard.press("x");
+  await page.keyboard.press("b");
   await page.keyboard.press("c");
   await page.locator("#pause").click();
   assert.equal(await page.locator("#pausePanel").isVisible(), true, "pause panel should open");
