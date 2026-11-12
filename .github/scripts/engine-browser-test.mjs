@@ -77,7 +77,6 @@ async function verifyViewport(name, options = {}) {
   if (!metrics.calls || metrics.calls === "—") failures.push(name + ": draw-call telemetry missing");
   if (!metrics.triangles || metrics.triangles === "—") failures.push(name + ": triangle telemetry missing");
 
-  await page.screenshot({ path: "artifacts/engine-" + name + ".png", fullPage: true });
   console.log(name + " viewport passed: " + JSON.stringify(metrics));
   await context.close();
 }
