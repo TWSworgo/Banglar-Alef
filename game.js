@@ -87,7 +87,8 @@ function addEvents(){
     const up=e=>{e.preventDefault();controls[name]=false;};
     button.addEventListener("pointerdown",down);button.addEventListener("pointerup",up);button.addEventListener("pointercancel",up);button.addEventListener("lostpointercapture",up);
   });
-  $("pause").addEventListener("click",togglePause);$("resume").addEventListener("click",togglePause);\n  $("restart-game").addEventListener("click",()=>{persistGame();window.location.href="./game.html?new=1";});
+  $("pause").addEventListener("click",togglePause);$("resume").addEventListener("click",togglePause);
+  $("restart-game").addEventListener("click",()=>{persistGame();window.location.href="./game.html?new=1";});
 }
 function persistGame(){
   if(!gameState||!vehicle)return;
@@ -120,7 +121,10 @@ function update(dt){
   vehicle.rotation.y=Math.PI+direction*0.32*Math.min(1,speed/5);
   vehicle.position.x=THREE.MathUtils.clamp(vehicle.position.x+direction*dt*(2.2+speed*.24),-5.6,5.6);
   vehicle.position.z-=speed*dt;
-  battery=Math.max(0,battery-dt*(.012+speed*.0018));\n  gameState=updateGameState(gameState,state=>{state.statistics.playTimeSeconds+=dt;state.statistics.distanceMetres+=Math.max(0,previousZ-vehicle.position.z);});\n  saveClock+=dt;\n  if(saveClock>=5){saveClock=0;persistGame();}
+  battery=Math.max(0,battery-dt*(.012+speed*.0018));
+  gameState=updateGameState(gameState,state=>{state.statistics.playTimeSeconds+=dt;state.statistics.distanceMetres+=Math.max(0,previousZ-vehicle.position.z);});
+  saveClock+=dt;
+  if(saveClock>=5){saveClock=0;persistGame();}
   traffic.forEach(car=>{car.position.z+=car.userData.speed*dt;if(car.position.z>65)car.position.z=-270;});
   const target=new THREE.Vector3(vehicle.position.x,4.5,vehicle.position.z+10.5);
   camera.position.lerp(target,.09);
@@ -136,5 +140,25 @@ function tick(){
   animationId=requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.05);
   if(!paused){update(dt);renderer.render(scene,camera);}
 }
-try{init();}catch(error){console.error(error);errorPanel.hidden=false;$("error-text").textContent=error.message||"WebGL renderer error";}
-window.addEventListener("beforeunload",()=>{cancelAnimationFrame(animationId);renderer?.dispose();});
+try{
+  const params=new URLSearchParams(location.search);
+  if(params.get("new")==="1") gameState=createNewGameState();
+  else {
+    const loaded=loadGameState();
+    gameState=loaded.ok?loaded.state:createNewGameState();
+  }
+  money=gameState.player.money;
+  battery=gameState.player.battery;
+  journeyStage=gameState.progression.activeMissionStage;
+  init();
+  if(params.get("new")==="1") persistGame();
+}catch(error){
+  console.error(error);
+  errorPanel.hidden=false;
+  $("#error-text").textContent=error.message||"WebGL renderer error";
+}
+window.addEventListener("beforeunload",()=>{
+  persistGame();
+  cancelAnimationFrame(animationId);
+  renderer?.dispose();
+});
