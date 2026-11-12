@@ -1,122 +1,97 @@
 import * as THREE from "three";
 import { buildDhakaShowcase } from "./engine-showcase.js";
+import { RoadWorld, createDrivingModel } from "./game-world.js";
 import { createNewGameState, loadGameState, saveGameState, transitionGameState, updateGameState } from "./game-core.js";
 
 const $ = id => document.getElementById(id);
 const root = $("world");
-const errorPanel = $("error-panel");
-let renderer, scene, camera, vehicle, clock, animationId;
-let paused = false, speed = 0, battery = 100, money = 0;
-let gameState;
-let saveClock = 0;
-let steering = 0, forward = false, braking = false, journeyStage = 0;
-const keys = new Set();
-const controls = { left:false, right:false, forward:false, brake:false };
-const MAX_SPEED = 15.5;
+let renderer, scene, camera, clock, animationId, vehicle, world, driving, gameState;
+let paused=false, money=0, battery=100, journeyStage=0, saveClock=0;
+const keys=new Set(), controls={left:false,right:false,forward:false,brake:false,reverse:false};
 
-function box(w,h,d,x,y,z,material,receive=true){
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d),material);
-  mesh.position.set(x,y,z); mesh.receiveShadow=receive; mesh.castShadow=true; scene.add(mesh); return mesh;
-}
-function buildRoad(){
-  const asphalt = new THREE.MeshStandardMaterial({color:0x343a37,roughness:0.96});
-  const concrete = new THREE.MeshStandardMaterial({color:0x92938b,roughness:0.94});
-  const paint = new THREE.MeshStandardMaterial({color:0xe8dfc0,roughness:0.8});
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(260,520),new THREE.MeshStandardMaterial({color:0x71816d,roughness:1}));
-  ground.rotation.x=-Math.PI/2; ground.position.set(0,-0.12,-115); scene.add(ground);
-  box(15,0.12,340,0,-0.02,-105,asphalt);
-  box(3.2,0.2,340,-9.1,0.02,-105,concrete);
-  box(3.2,0.2,340,9.1,0.02,-105,concrete);
-  for(let z=55;z>-275;z-=11) box(0.13,0.025,4.4,0,0.055,z,paint,false);
-  for(const side of [-1,1]){
-    for(let z=65;z>-270;z-=24){
-      box(0.22,0.4,0.22,side*10.8,0.2,z,concrete);
-      box(0.2,0.18,0.2,side*10.8,0.48,z,paint,false);
-    }
-  }
-}
-function addTraffic(){
-  const carColors=[0xb8b8ad,0x1c5260,0x8b3226,0xd0a94c];
-  for(let i=0;i<7;i++){
-    const car=new THREE.Group();
-    const color=new THREE.MeshStandardMaterial({color:carColors[i%carColors.length],roughness:.42,metalness:.12});
-    const body=new THREE.Mesh(new THREE.BoxGeometry(1.75,.72,3.5),color);body.position.y=.7;car.add(body);
-    const cabin=new THREE.Mesh(new THREE.BoxGeometry(1.48,.65,1.8),new THREE.MeshPhysicalMaterial({color:0x78918f,roughness:.18,transparent:true,opacity:.78}));cabin.position.set(0,1.35,-.25);car.add(cabin);
-    car.position.set((i%2? -3.1:3.1),0,-28-i*33);car.userData.speed=3.2+(i%3)*1.1;car.userData.baseZ=car.position.z;scene.add(car);traffic.push(car);
-  }
-}
-const traffic=[];
-function addPassenger(){
-  const marker=new THREE.Group();
-  const glow=new THREE.Mesh(new THREE.CylinderGeometry(.6,.6,.06,24),new THREE.MeshBasicMaterial({color:0x43f1a4}));
-  glow.position.y=.08;marker.add(glow);
-  const person=new THREE.Mesh(new THREE.CapsuleGeometry(.25,.85,4,8),new THREE.MeshStandardMaterial({color:0x276c52,roughness:.85}));
-  person.position.y=.72;marker.add(person);
-  const label=document.createElement("div");label.className="passenger-label";label.textContent="যাত্রী"; 
-  marker.position.set(-2.5,0,-90);scene.add(marker);return marker;
-}
 function init(){
-  scene=new THREE.Scene();scene.background=new THREE.Color(0x9eafa8);scene.fog=new THREE.Fog(0x9eafa8,85,260);
-  camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.1,500);camera.position.set(0,6,13);
+  scene=new THREE.Scene();
+  scene.background=new THREE.Color(0x9eafa8);
+  scene.fog=new THREE.FogExp2(0x9eafa8,.0024);
+  camera=new THREE.PerspectiveCamera(64,innerWidth/innerHeight,.1,900);
   renderer=new THREE.WebGLRenderer({antialias:innerWidth>700,powerPreference:"high-performance"});
-  renderer.setPixelRatio(Math.min(devicePixelRatio||1,innerWidth<700?1.35:1.7));renderer.setSize(innerWidth,innerHeight);
-  renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
-  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;root.replaceChildren(renderer.domElement);
-  scene.add(new THREE.HemisphereLight(0xe8f2f0,0x53604c,1.5));
-  const sun=new THREE.DirectionalLight(0xffe4bd,2.2);sun.position.set(-24,38,18);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);scene.add(sun);
-  buildRoad();
+  renderer.setPixelRatio(Math.min(devicePixelRatio||1,innerWidth<700?1.3:1.7));
+  renderer.setSize(innerWidth,innerHeight);
+  renderer.outputColorSpace=THREE.SRGBColorSpace;
+  renderer.toneMapping=THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure=1.1;
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  root.replaceChildren(renderer.domElement);
+
+  scene.add(new THREE.HemisphereLight(0xe9f3ef,0x4d594c,1.55));
+  const sun=new THREE.DirectionalLight(0xffe2ba,2.15);
+  sun.position.set(-120,150,80); sun.castShadow=true;
+  sun.shadow.mapSize.set(1024,1024); sun.shadow.camera.left=-250;sun.shadow.camera.right=250;
+  sun.shadow.camera.top=250;sun.shadow.camera.bottom=-250;scene.add(sun);
+
+  world=new RoadWorld(THREE,scene);
   const showcase=buildDhakaShowcase(THREE,scene);
   vehicle=showcase.vehicle;
   vehicle.position.set(gameState.player.position.x,gameState.player.position.y,gameState.player.position.z);
   vehicle.rotation.y=gameState.player.heading;
-  addTraffic();
-  addPassenger();
-  if(journeyStage===1){$("mission-label").textContent="যাত্রী পাওয়া গেছে";$("mission-text").textContent="সামনের সবুজ মার্কারের কাছে গাড়ি থামাও";}
-  if(journeyStage===2){$("mission-label").textContent="যাত্রা সম্পন্ন";$("mission-text").textContent="আগের যাত্রা সম্পন্ন হয়েছে — নতুন যাত্রা শুরু করো";}
-  clock=new THREE.Clock();
+  driving=createDrivingModel(THREE,vehicle);
   addEvents();
-  window.__gameDiagnostics = { get vehicleZ(){return vehicle.position.z;}, get speed(){return speed;}, get battery(){return battery;}, get journeyStage(){return journeyStage;}, complete:finishGame };
+  updateMissionUI();
+  window.__gameDiagnostics={
+    get speed(){return driving.speed},
+    get battery(){return battery},
+    get traffic(){return world.traffic.length},
+    get people(){return world.people.length},
+    get position(){return {x:vehicle.position.x,z:vehicle.position.z}},
+    get journeyStage(){return journeyStage},
+    save:persistGame
+  };
   window.addEventListener("resize",resize);
+  clock=new THREE.Clock();
   tick();
 }
-function resize(){if(!renderer)return;camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);}
+
+function resize(){
+  if(!renderer)return;
+  camera.aspect=innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth,innerHeight);
+}
+
+function input(){
+  return {
+    left:keys.has("a")||keys.has("arrowleft")||controls.left,
+    right:keys.has("d")||keys.has("arrowright")||controls.right,
+    forward:keys.has("w")||keys.has("arrowup")||controls.forward,
+    brake:keys.has("s")||keys.has("arrowdown")||controls.brake,
+    reverse:keys.has("r")||controls.reverse
+  };
+}
+
 function addEvents(){
-  window.addEventListener("keydown",e=>{keys.add(e.key.toLowerCase());if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(e.key.toLowerCase()))e.preventDefault();if(e.key==="Escape")togglePause();});
+  window.addEventListener("keydown",e=>{
+    const k=e.key.toLowerCase();
+    keys.add(k);
+    if(["arrowup","arrowdown","arrowleft","arrowright"," "].includes(k))e.preventDefault();
+    if(k==="escape")togglePause();
+  });
   window.addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
   document.querySelectorAll("[data-control]").forEach(button=>{
     const name=button.dataset.control;
-    const down=e=>{e.preventDefault();controls[name]=true;button.setPointerCapture?.(e.pointerId);};
-    const up=e=>{e.preventDefault();controls[name]=false;};
-    button.addEventListener("pointerdown",down);button.addEventListener("pointerup",up);button.addEventListener("pointercancel",up);button.addEventListener("lostpointercapture",up);
+    const down=e=>{e.preventDefault();controls[name]=true;button.setPointerCapture?.(e.pointerId)};
+    const up=e=>{e.preventDefault();controls[name]=false};
+    button.addEventListener("pointerdown",down);
+    button.addEventListener("pointerup",up);
+    button.addEventListener("pointercancel",up);
+    button.addEventListener("lostpointercapture",up);
   });
-  $("pause").addEventListener("click",togglePause);$("resume").addEventListener("click",togglePause);
-  $("completion-restart").addEventListener("click",()=>{clearCurrentSaveAndRestart();});
-  window.addEventListener("banglar-alef:complete",finishGame);
-  $("restart-game").addEventListener("click",()=>{persistGame();window.location.href="./game.html?new=1";});
+  $("pause").addEventListener("click",togglePause);
+  $("resume").addEventListener("click",togglePause);
+  $("restart-game").addEventListener("click",()=>location.href="./game.html?new=1");
+  $("completion-restart").addEventListener("click",()=>location.href="./game.html?new=1");
 }
-function persistGame(){
-  if(!gameState||!vehicle)return;
-  gameState=updateGameState(gameState,state=>{
-    state.player.money=money;
-    state.player.battery=battery;
-    state.player.position={x:vehicle.position.x,y:vehicle.position.y,z:vehicle.position.z};
-    state.player.heading=vehicle.rotation.y;
-    state.statistics.distanceMetres=Math.max(state.statistics.distanceMetres,Math.max(0,48-vehicle.position.z));
-    state.statistics.playTimeSeconds+=0;
-  });
-  const result=saveGameState(gameState);
-  if(!result.ok) $("toast").textContent="গেম সংরক্ষণ করা যায়নি — browser storage পরীক্ষা করো";
-  return result;
-}
-function clearCurrentSaveAndRestart(){window.location.href="./game.html?new=1";}
-function finishGame(){
-  if(!gameState)return;
-  if(gameState.status==="playing"||gameState.status==="paused")gameState=transitionGameState(gameState,"completed");
-  paused=true;
-  $("pause-panel").hidden=true;
-  $("completion-panel").hidden=false;
-  persistGame();
-}
+
 function togglePause(){
   if(gameState.status==="completed")return;
   paused=!paused;
@@ -124,55 +99,151 @@ function togglePause(){
   if(paused){gameState=transitionGameState(gameState,"paused");persistGame();}
   else{gameState=transitionGameState(gameState,"playing");clock.getDelta();}
 }
+
+function persistGame(){
+  if(!gameState||!vehicle)return;
+  gameState=updateGameState(gameState,state=>{
+    state.player.money=money;
+    state.player.battery=battery;
+    state.player.position={x:vehicle.position.x,y:vehicle.position.y,z:vehicle.position.z};
+    state.player.heading=vehicle.rotation.y;
+    state.progression.activeMissionStage=journeyStage;
+    state.statistics.playTimeSeconds+=0;
+  });
+  return saveGameState(gameState);
+}
+
+function updateMissionUI(){
+  if(journeyStage===0){
+    $("mission-label").textContent="নতুন যাত্রা";
+    $("mission-text").textContent="রাস্তার পাশে যাত্রী খুঁজে CNG ধীরে থামাও";
+  }else if(journeyStage===1){
+    $("mission-label").textContent="যাত্রী উঠেছে";
+    $("mission-text").textContent="যাত্রীকে সবুজ গন্তব্যের দিকে নিয়ে যাও";
+  }else{
+    $("mission-label").textContent="যাত্রা সম্পন্ন";
+    $("mission-text").textContent="ভাড়া পেয়েছ — পরের যাত্রা শুরু করো";
+  }
+}
+
+function createPassenger(){
+  const p=world.spawnPassengerNear(vehicle.position);
+  p.userData.stage=journeyStage;
+}
+
+function handleJourney(){
+  if(journeyStage===0){
+    const nearest=world.nearestPassenger(vehicle.position);
+    if(nearest.passenger && nearest.distance<4 && Math.abs(driving.speed)<1.0){
+      nearest.passenger.userData.active=false;
+      nearest.passenger.visible=false;
+      journeyStage=1;
+      gameState=updateGameState(gameState,s=>{s.progression.activeMissionStage=1});
+      updateMissionUI();
+      $("toast").textContent="যাত্রী উঠেছে — এখন গন্তব্যে যাও";
+      persistGame();
+      return;
+    }
+    if(world.passengers.length===0)createPassenger();
+  }else if(journeyStage===1){
+    const destination=new THREE.Vector3(vehicle.position.x+18,0,vehicle.position.z-85);
+    const distance=vehicle.position.distanceTo(destination);
+    if(distance<7 && driving.speed<1.2){
+      journeyStage=2;
+      const fare=25+Math.floor(Math.random()*31);
+      money+=fare;
+      gameState=updateGameState(gameState,s=>{
+        s.player.money=money;s.progression.activeMissionStage=2;
+        s.progression.journeysCompleted+=1;s.statistics.totalEarned+=fare;
+      });
+      updateMissionUI();
+      $("toast").textContent=`যাত্রা সম্পন্ন — ভাড়া ৳${fare}`;
+      persistGame();
+    }
+  }
+}
+
 function update(dt){
-  const previousZ=vehicle.position.z;
-  const go=keys.has("w")||keys.has("arrowup")||controls.forward;
-  const stop=keys.has("s")||keys.has("arrowdown")||controls.brake;
-  const left=keys.has("a")||keys.has("arrowleft")||controls.left;
-  const right=keys.has("d")||keys.has("arrowright")||controls.right;
-  if(go)speed=Math.min(MAX_SPEED,speed+dt*5.2);else speed=Math.max(0,speed-dt*(stop?14:3.2));
-  if(stop)speed=Math.max(0,speed-dt*8);
-  const direction=(right?1:0)-(left?1:0);
-  vehicle.rotation.y=Math.PI+direction*0.32*Math.min(1,speed/5);
-  vehicle.position.x=THREE.MathUtils.clamp(vehicle.position.x+direction*dt*(2.2+speed*.24),-5.6,5.6);
-  vehicle.position.z-=speed*dt;
-  battery=Math.max(0,battery-dt*(.012+speed*.0018));
-  gameState=updateGameState(gameState,state=>{state.statistics.playTimeSeconds+=dt;state.statistics.distanceMetres+=Math.max(0,previousZ-vehicle.position.z);});
+  const previous=vehicle.position.clone();
+  const inp=input();
+  let moveInput={...inp};
+  if(inp.reverse&&!inp.forward){
+    moveInput.forward=false;
+    if(driving.speed>0)driving.speed=Math.max(0,driving.speed-driving.brake*dt);
+    else vehicle.position.z+=0;
+  }
+  driving.update(dt,moveInput);
+  if(inp.reverse && !inp.forward && driving.speed<.15){
+    const reverseSpeed=3.8;
+    const fwd=new THREE.Vector3(Math.sin(vehicle.rotation.y),0,Math.cos(vehicle.rotation.y));
+    vehicle.position.addScaledVector(fwd,reverseSpeed*dt);
+  }
+
+  // Keep the player inside the streamed playable district.
+  vehicle.position.x=THREE.MathUtils.clamp(vehicle.position.x,-202,202);
+  vehicle.position.z=THREE.MathUtils.clamp(vehicle.position.z,-262,262);
+
+  // Lightweight vehicle collision response against traffic.
+  for(const car of world.traffic){
+    const dx=vehicle.position.x-car.position.x, dz=vehicle.position.z-car.position.z;
+    if(Math.abs(dx)<1.75 && Math.abs(dz)<2.8){
+      const len=Math.hypot(dx,dz)||1;
+      vehicle.position.x+=dx/len*.45;
+      vehicle.position.z+=dz/len*.45;
+      driving.speed=Math.max(0,driving.speed-5.5*dt);
+      $("toast").textContent="সতর্ক: ট্রাফিকের সঙ্গে ধাক্কা লেগেছে";
+    }
+  }
+
+  world.update(dt,vehicle);
+  handleJourney();
+
+  const distanceMoved=previous.distanceTo(vehicle.position);
+  battery=Math.max(0,battery-distanceMoved*.0045-dt*.004);
+  if(battery<15 && battery>0) $("toast").textContent="ব্যাটারি কম — কাছের charging point খুঁজে নাও";
+  if(battery<=0){driving.speed=Math.max(0,driving.speed-8*dt);$("mission-text").textContent="ব্যাটারি শেষ — গাড়ি থেমে গেছে";}
+
+  gameState=updateGameState(gameState,s=>{
+    s.statistics.playTimeSeconds+=dt;
+    s.statistics.distanceMetres+=distanceMoved;
+  });
   saveClock+=dt;
   if(saveClock>=5){saveClock=0;persistGame();}
-  traffic.forEach(car=>{car.position.z+=car.userData.speed*dt;if(car.position.z>65)car.position.z=-270;});
-  const target=new THREE.Vector3(vehicle.position.x,4.5,vehicle.position.z+10.5);
+
+  const forward=new THREE.Vector3(Math.sin(vehicle.rotation.y),0,Math.cos(vehicle.rotation.y));
+  const target=vehicle.position.clone().addScaledVector(forward,-11);
+  target.y+=5.2;
   camera.position.lerp(target,.09);
-  camera.lookAt(vehicle.position.x,1.0,vehicle.position.z-8);
-  $("speed").textContent=Math.round(speed*3.6).toLocaleString("bn-BD");
+  camera.lookAt(vehicle.position.x,1.1,vehicle.position.z);
+
+  $("speed").textContent=Math.max(0,Math.round(Math.abs(driving.speed)*3.6)).toLocaleString("bn-BD");
   $("battery").textContent=Math.round(battery).toLocaleString("bn-BD")+"%";
-  $("money").textContent=money.toLocaleString("bn-BD");
-  if(journeyStage===0&&vehicle.position.z< -28){journeyStage=1;gameState=updateGameState(gameState,state=>{state.progression.activeMissionStage=1;});persistGame();$("mission-label").textContent="যাত্রী পাওয়া গেছে";$("mission-text").textContent="সামনের সবুজ মার্কারের কাছে গাড়ি থামাও";$("toast").textContent="যাত্রী তুলতে গাড়ি ধীরে থামাও";}
-  if(journeyStage===1&&vehicle.position.z< -83&&speed<1.2){journeyStage=2;money+=30;gameState=updateGameState(gameState,state=>{state.player.money=money;state.progression.journeysCompleted+=1;state.progression.activeMissionStage=2;state.statistics.totalEarned+=30;});persistGame();$("mission-label").textContent="যাত্রা সম্পন্ন";$("mission-text").textContent="যাত্রীকে পৌঁছে দিয়েছ — ভাড়া ৳৩০";$("toast").textContent="প্রথম ভাড়া পেয়েছ: ৳৩০"; }
-  if(battery<=0){speed=Math.max(0,speed-dt*5);$("mission-text").textContent="ব্যাটারি শেষ — যাত্রা থেমে গেছে";}
+  $("money").textContent=Math.round(money).toLocaleString("bn-BD");
 }
+
 function tick(){
-  animationId=requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.05);
+  animationId=requestAnimationFrame(tick);
+  const dt=Math.min(clock.getDelta(),.05);
   if(!paused){update(dt);renderer.render(scene,camera);}
 }
+
 try{
   const params=new URLSearchParams(location.search);
-  if(params.get("new")==="1") gameState=createNewGameState();
-  else {
-    const loaded=loadGameState();
-    gameState=loaded.ok?loaded.state:createNewGameState();
-  }
+  if(params.get("new")==="1")gameState=createNewGameState();
+  else{const loaded=loadGameState();gameState=loaded.ok?loaded.state:createNewGameState();}
   money=gameState.player.money;
   battery=gameState.player.battery;
   journeyStage=gameState.progression.activeMissionStage;
+  if(journeyStage>2)journeyStage=0;
   init();
-  if(gameState.status==="completed")finishGame();
-  if(params.get("new")==="1") persistGame();
+  if(journeyStage===0)createPassenger();
+  if(journeyStage===2)updateMissionUI();
 }catch(error){
   console.error(error);
-  errorPanel.hidden=false;
+  $("error-panel").hidden=false;
   $("error-text").textContent=error.message||"WebGL renderer error";
 }
+
 window.addEventListener("beforeunload",()=>{
   persistGame();
   cancelAnimationFrame(animationId);
