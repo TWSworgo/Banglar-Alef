@@ -8,6 +8,8 @@ on:
       - "engine-systems.js"
       - "engine-assets.js"
       - "engine-showcase.js"
+      - "app.js"
+      - "index.html"
       - "game.js"
       - "game-core.js"
       - ".github/scripts/game-core.test.mjs"
