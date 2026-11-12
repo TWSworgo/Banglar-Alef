@@ -23,9 +23,8 @@ try{
   if(!(await page.locator("#pause-panel").isVisible()))failures.push("pause overlay did not open");
   await page.locator("#resume").click();
   if(!(await page.locator("#pause-panel").isHidden()))failures.push("resume did not close pause overlay");
-  await context.close();
-  const menuContext=await browser.newContext({viewport:{width:1280,height:800}});
-  const menu=await menuContext.newPage();
+  const menu=await context.newPage();
+  await menu.setViewportSize({width:1280,height:800});
   await menu.goto("http://127.0.0.1:4173/index.html",{waitUntil:"domcontentloaded"});
   await menu.waitForSelector("#new-game:not(:disabled)",{timeout:15000});
   await menu.waitForSelector("#continue-game:not(:disabled)",{timeout:15000});
@@ -35,7 +34,7 @@ try{
   await menu.locator("#new-game").click();
   await menu.waitForURL("**/game.html?new=1",{timeout:15000});
   console.log("Save/Continue, New Game navigation and mobile driving passed.");
-  await menuContext.close();
+  await context.close();
 }finally{await browser.close();}
 if(errors.length)failures.push(...errors);
 if(failures.length){for(const f of failures)console.error("FAIL: "+f);process.exit(1);}
