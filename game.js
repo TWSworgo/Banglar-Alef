@@ -2,7 +2,7 @@ import * as THREE from "three";
 
 const $=id=>document.getElementById(id);
 const canvas=$("view"), mapCanvas=$("map"), map=mapCanvas.getContext("2d");
-const ui={overlay:$("overlay"),start:$("start"),pause:$("pause"),pausePanel:$("pausePanel"),resume:$("resume"),restart:$("restart"),endPanel:$("endPanel"),again:$("again"),endTitle:$("endTitle"),endText:$("endText"),finalScore:$("finalScore"),finalBest:$("finalBest"),finalCrashes:$("finalCrashes"),score:$("score"),combo:$("combo"),battery:$("battery"),batteryBar:$("batteryBar"),best:$("best"),accidents:$("accidents"),accidentBar:$("accidentBar"),mission:$("mission"),missionSub:$("missionSub"),hint:$("hint"),clock:$("clock"),toast:$("toast"),horn:$("horn"),camera:$("camera"),quality:$("quality"),soundToggle:$("soundToggle")};
+const ui={overlay:$("overlay"),start:$("start"),pause:$("pause"),pausePanel:$("pausePanel"),resume:$("resume"),restart:$("restart"),endPanel:$("endPanel"),again:$("again"),endTitle:$("endTitle"),endText:$("endText"),finalScore:$("finalScore"),finalBest:$("finalBest"),finalCrashes:$("finalCrashes"),score:$("score"),speed:$("speed"),combo:$("combo"),battery:$("battery"),batteryBar:$("batteryBar"),best:$("best"),accidents:$("accidents"),accidentBar:$("accidentBar"),mission:$("mission"),missionSub:$("missionSub"),hint:$("hint"),clock:$("clock"),toast:$("toast"),horn:$("horn"),camera:$("camera"),quality:$("quality"),soundToggle:$("soundToggle")};
 const renderer=new THREE.WebGLRenderer({canvas,antialias:true,powerPreference:"high-performance"});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);
 renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -78,6 +78,18 @@ for(let ix=-GRID;ix<=GRID;ix+=3)for(let iz=-GRID;iz<=GRID;iz+=3){
  box(city,x+5,2.4,z+5,.16,4.8,.16,M.black,false);box(city,x+5,4.6,z+5,.62,1.55,.42,M.black,false);
  const red=new THREE.Mesh(new THREE.SphereGeometry(.19,10,8),redMat);red.position.set(x+5,5.05,z+4.77);city.add(red);
  const green=new THREE.Mesh(new THREE.SphereGeometry(.19,10,8),greenMat);green.position.set(x+5,4.25,z+4.77);city.add(green);signals.push({red,green});
+}
+const streetLights=[],bulbMaterial=new THREE.MeshStandardMaterial({color:0xffd28a,emissive:0x000000});
+for(let x=-GRID;x<=GRID;x+=2)for(let z=-GRID;z<=GRID;z+=2){
+ const px=x*STEP+6,pz=z*STEP+6;box(city,px,3.2,pz,.16,6.4,.16,M.black,false);
+ const bulb=new THREE.Mesh(new THREE.SphereGeometry(.24,10,8),bulbMaterial);bulb.position.set(px,6.55,pz);city.add(bulb);streetLights.push(bulb);
+}
+const dayColor=new THREE.Color(0xbacbd0),nightColor=new THREE.Color(0x101a31);
+function updateLighting(){
+ const phase=state.time/24*Math.PI*2-Math.PI/2,daylight=clamp((Math.sin(phase)+.16)/1.16,0,1);
+ scene.background.copy(nightColor).lerp(dayColor,daylight);scene.fog.color.copy(scene.background);
+ sun.intensity=.25+2.15*daylight;sun.position.set(-70,18+92*daylight,55);
+ const night=1-daylight;bulbMaterial.emissive.setRGB(.95*night,.56*night,.18*night);
 }
 function makeCng(){
  const g=new THREE.Group();box(g,0,.82,0,1.85,1.15,2.65,M.green);box(g,0,1.58,-.12,1.75,.13,2.3,M.yellow);
@@ -181,7 +193,7 @@ for(let i=0;i<9;i++){
 }
 const chasers=[];let cameraMode=0;
 const cameraOffsets=[new THREE.Vector3(0,6.2,-10),new THREE.Vector3(0,2.7,-3.8),new THREE.Vector3(0,12,-17)];
-const state={running:false,paused:false,over:false,speed:0,yaw:0,battery:100,score:0,best:Number(localStorage.getItem("ba_best")||0),accidents:0,streak:1,crashes:0,mission:0,passenger:false,time:8.5,toastTimer:0,trafficClock:0,hornCooldown:0,collisionCooldown:0,chargeTimer:0,muted:false,quality:localStorage.getItem("ba_quality")||"medium"};
+const state={running:false,paused:false,over:false,speed:0,yaw:0,battery:100,score:0,best:Number(localStorage.getItem("ba_best")||0),accidents:0,streak:1,crashes:0,mission:0,passenger:false,time:8.5,toastTimer:0,trafficClock:0,hornCooldown:0,collisionCooldown:0,chargeTimer:0,signalStopKey:"",muted:false,quality:localStorage.getItem("ba_quality")||"medium"};
 const keys={},controls={left:false,right:false,throttle:false,brake:false};
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function toast(message){ui.toast.textContent=message;ui.toast.classList.add("show");state.toastTimer=2.3}
@@ -234,6 +246,14 @@ function updatePlayer(dt){
  const old=player.position.clone();player.position.x+=Math.sin(state.yaw)*state.speed*dt;player.position.z+=Math.cos(state.yaw)*state.speed*dt;
  player.position.x=clamp(player.position.x,-HALF-10,HALF+10);player.position.z=clamp(player.position.z,-HALF-10,HALF+10);
  if(Math.abs(state.speed)>1)state.battery=Math.max(0,state.battery-(.12+Math.abs(state.speed)*.008)*dt);
+ const ix=Math.round(player.position.x/STEP),iz=Math.round(player.position.z/STEP),junctionKey=ix+","+iz;
+ const nearJunction=Math.hypot(player.position.x-ix*STEP,player.position.z-iz*STEP)<5.5;
+ const approachAxis=Math.abs(Math.sin(state.yaw))>Math.abs(Math.cos(state.yaw))?"x":"z",greenAxis=state.trafficClock<20?"x":"z";
+ if(nearJunction&&approachAxis!==greenAxis&&Math.abs(state.speed)<1.2&&state.signalStopKey!==junctionKey){
+  state.score+=5;state.signalStopKey=junctionKey;toast("সিগন্যালে নিরাপদে থেমেছেন! +৳৫");
+  if(state.score>state.best){state.best=state.score;try{localStorage.setItem("ba_best",String(state.best))}catch{}}
+ }
+ if(!nearJunction)state.signalStopKey="";
  if(state.collisionCooldown>0)state.collisionCooldown-=dt;if(state.hornCooldown>0)state.hornCooldown-=dt;
  for(const t of traffic){const dx=player.position.x-t.mesh.position.x,dz=player.position.z-t.mesh.position.z;if(dx*dx+dz*dz<9){player.position.copy(old);impact("vehicle");break}}
  for(const o of obstacles){const dx=player.position.x-o.x,dz=player.position.z-o.z;if(dx*dx+dz*dz<(o.r+1.15)**2){player.position.copy(old);if(Math.abs(state.speed)>3)impact("building");state.speed*=.2;break}}
@@ -262,7 +282,7 @@ function updatePeople(dt){
 }
 function updateHud(){
  const bn=n=>Math.round(n).toString().replace(/\d/g,d=>"০১২৩৪৫৬৭৮৯"[d]);
- ui.score.textContent="৳"+bn(state.score);ui.combo.textContent="পরপর সফল যাত্রা ×"+bn(state.streak);ui.combo.classList.toggle("hidden",state.streak<2);
+ ui.score.textContent="৳"+bn(state.score);ui.speed.textContent=bn(Math.abs(state.speed)*3.6)+" km/h";ui.combo.textContent="পরপর সফল যাত্রা ×"+bn(state.streak);ui.combo.classList.toggle("hidden",state.streak<2);
  ui.battery.textContent=bn(state.battery)+"%";ui.batteryBar.style.width=state.battery+"%";ui.batteryBar.style.background=state.battery<20?"#f15d45":"#72e69a";
  ui.best.textContent="৳"+bn(state.best);ui.accidents.textContent=bn(state.accidents);ui.accidentBar.style.width=(state.accidents/5*100)+"%";
  ui.hint.textContent=state.battery<20?"চার্জ কম! মানচিত্রে সবুজ চার্জিং পয়েন্ট খুঁজুন।":state.passenger?"যাত্রীকে নিরাপদে হলুদ গন্তব্যে পৌঁছে দিন।":"সবুজ চিহ্নে ধীরে থামিয়ে যাত্রী তুলুন।";
@@ -277,7 +297,7 @@ function drawMap(){
  const px=90+player.position.x/(HALF*2)*180,pz=90+player.position.z/(HALF*2)*180;map.fillStyle="#ffca35";map.beginPath();map.arc(px,pz,4,0,Math.PI*2);map.fill();
 }
 function reset(){
- player.position.set(0,0,0);state.speed=0;state.yaw=0;player.rotation.y=0;state.battery=100;state.score=0;state.accidents=0;state.streak=1;state.crashes=0;state.mission=0;state.passenger=false;state.time=8.5;state.over=false;state.chargeTimer=0;state.collisionCooldown=0;
+ player.position.set(0,0,0);state.speed=0;state.yaw=0;player.rotation.y=0;state.battery=100;state.score=0;state.accidents=0;state.streak=1;state.crashes=0;state.mission=0;state.passenger=false;state.time=8.5;state.signalStopKey="";state.over=false;state.chargeTimer=0;state.collisionCooldown=0;
  chargers.forEach(c=>c.cooldown=0);pickups.forEach(p=>{p.active=true;p.mesh.visible=true});
  destination.visible=false;ui.endPanel.classList.add("hidden");ui.pausePanel.classList.add("hidden");updateHud();drawMap();
 }
@@ -293,7 +313,7 @@ let last=performance.now(),frame=0;
 function loop(now){
  requestAnimationFrame(loop);const dt=Math.min(.04,(now-last)/1000||0);last=now;
  if(state.running&&!state.paused&&!state.over){
-  updatePlayer(dt);updateTraffic(dt);updatePeople(dt);updateMissions(dt);state.time=(state.time+dt*.012)%24;
+  updatePlayer(dt);updateTraffic(dt);updatePeople(dt);updateMissions(dt);state.time=(state.time+dt*.025)%24;updateLighting();
   const two=n=>Math.floor(n).toString().padStart(2,"0");ui.clock.textContent=two(Math.floor(state.time))+":"+two(Math.floor((state.time%1)*60));
   if(state.toastTimer>0){state.toastTimer-=dt;if(state.toastTimer<=0)ui.toast.classList.remove("show")}
   updateHud();if(++frame%7===0)drawMap();
