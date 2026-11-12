@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "engine.js"
+      - "engine-systems.js"
+      - ".github/scripts/engine-systems.test.mjs"
       - "engine.html"
       - "engine.css"
       - ".github/scripts/engine-browser-test.mjs"
@@ -30,8 +32,12 @@ jobs:
           node-version: "22"
       - name: Validate JavaScript module syntax
         run: node --check engine.js
+      - name: Validate engine systems module syntax
+        run: node --check engine-systems.js
       - name: Validate browser test syntax
         run: node --check .github/scripts/engine-browser-test.mjs
+      - name: Run engine systems unit tests
+        run: node --test .github/scripts/engine-systems.test.mjs
       - name: Validate engine page contract
         run: |
           node --input-type=module <<'NODE'
