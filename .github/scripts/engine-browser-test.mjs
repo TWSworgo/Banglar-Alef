@@ -53,6 +53,36 @@ async function verifyViewport(name, options = {}) {
   const assetStatus = await page.locator("#asset-pipeline-status").textContent();
   if (!assetStatus?.includes("READY")) failures.push(name + ": compressed glTF asset pipeline did not initialize");
 
+  const gltfBuffer = Buffer.alloc(42);
+  const vertexValues = [-1, 0, 0, 1, 0, 0, 0, 1, 0];
+  vertexValues.forEach((value, index) => gltfBuffer.writeFloatLE(value, index * 4));
+  [0, 1, 2].forEach((value, index) => gltfBuffer.writeUInt16LE(value, 36 + index * 2));
+  const gltfFixture = {
+    asset: { version: "2.0", generator: "Banglar Alef CI fixture" },
+    buffers: [{ byteLength: 42, uri: "data:application/octet-stream;base64," + gltfBuffer.toString("base64") }],
+    bufferViews: [
+      { buffer: 0, byteOffset: 0, byteLength: 36, target: 34962 },
+      { buffer: 0, byteOffset: 36, byteLength: 6, target: 34963 }
+    ],
+    accessors: [
+      { bufferView: 0, componentType: 5126, count: 3, type: "VEC3", min: [-1, 0, 0], max: [1, 1, 0] },
+      { bufferView: 1, componentType: 5123, count: 3, type: "SCALAR" }
+    ],
+    meshes: [{ primitives: [{ attributes: { POSITION: 0 }, indices: 1 }] }],
+    nodes: [{ mesh: 0 }],
+    scenes: [{ nodes: [0] }],
+    scene: 0
+  };
+  const gltfDataUrl = "data:model/gltf+json;base64," + Buffer.from(JSON.stringify(gltfFixture)).toString("base64");
+  const loadedAsset = await page.evaluate(async dataUrl => {
+    const module = await import("./engine.js");
+    const asset = await module.assetPipeline.loadGLTF(dataUrl);
+    const meshes = [];
+    asset.scene.traverse(object => { if (object.isMesh) meshes.push(object); });
+    return { count: meshes.length, boundsReady: meshes.every(mesh => Boolean(mesh.geometry.boundingBox && mesh.geometry.boundingSphere)) };
+  }, gltfDataUrl);
+  if (loadedAsset.count !== 1 || !loadedAsset.boundsReady) failures.push(name + ": glTF fixture failed to load or prepare geometry bounds");
+
   const canvas = page.locator("#viewport canvas");
   if (!(await canvas.isVisible())) failures.push(name + ": WebGL canvas is not visible");
 
