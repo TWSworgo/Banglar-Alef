@@ -66,7 +66,6 @@ jobs:
           npx playwright install --with-deps chromium
       - name: Start local web server
         run: |
-          mkdir -p artifacts
           python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/banglar-alef-http.log 2>&1 &
           for attempt in $(seq 1 30); do
             if curl --silent --fail http://127.0.0.1:4173/engine.html > /dev/null; then
@@ -78,11 +77,3 @@ jobs:
           exit 1
       - name: Run desktop and mobile-viewport WebGL acceptance tests
         run: node .github/scripts/engine-browser-test.mjs
-      - name: Upload browser screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: graphics-engine-browser-screenshots
-          path: artifacts/*.png
-          if-no-files-found: ignore
-          retention-days: 7
