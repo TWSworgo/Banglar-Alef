@@ -407,6 +407,10 @@ function updateTelemetry(now) {
   lastFrame = now;
   $("draw-calls").textContent = String(renderer.info.render.calls);
   $("triangles").textContent = renderer.info.render.triangles.toLocaleString();
+  const textureBytes = resourceTracker ? estimateTextureMemoryBytes([...resourceTracker.resources].filter(item => item?.isTexture)) : 0;
+  $("gpu-memory").textContent = textureBytes ? (textureBytes / 1048576).toFixed(1) + " MB*" : "—";
+  $("occlusion-count").textContent = String(occlusionCuller?.occludedCount ?? 0);
+  $("collision-pairs").textContent = String(collisionPairCount);
 }
 
 let slowFrames = 0, fastFrames = 0;
@@ -430,11 +434,13 @@ function adaptQuality(delta) {
 }
 
 function animate(now) {
-  if (disposed) return;
+  if (disposed || document.hidden) return;
   animationFrame = requestAnimationFrame(animate);
+  frameNumber++;
   const delta = Math.min(clock.getDelta(), 0.05);
   controls.update();
   updateLod();
+  if (frameNumber % 6 === 0) occlusionCuller?.update();
 
   const water = lights.water;
   const waterAttribute = water.geometry.attributes.position;
@@ -475,52 +481,45 @@ function animate(now) {
   adaptQuality(delta * 1000);
 }
 
-function setLightingPreset(value) {
-  if (!lights) return;
-  if (value === "sunset") {
-    lights.sun.color.set(0xffa45f); lights.sun.intensity = 2.25;
-    lights.sun.position.set(-35, 13, 18);
-    lights.hemi.color.set(0xffc69b); lights.hemi.groundColor.set(0x49352e); lights.hemi.intensity = 0.85;
-    lights.fill.intensity = 0.28;
-    scene.background.set(0x9c7467); scene.fog.color.set(0x9c7467);
-    renderer.toneMappingExposure = 1.15;
-  } else if (value === "night") {
-    lights.sun.color.set(0x9bb8ff); lights.sun.intensity = 0.28;
-    lights.sun.position.set(-12, 8, 18);
-    lights.hemi.color.set(0x526d9c); lights.hemi.groundColor.set(0x101a20); lights.hemi.intensity = 0.38;
-    lights.fill.intensity = 0.9;
-    scene.background.set(0x111b2b); scene.fog.color.set(0x111b2b);
-    renderer.toneMappingExposure = 0.8;
+function applyVisualPresets() {
+  if (!lights || !renderer) return;
+  let sunColor, sunIntensity, sunPosition, hemiSky, hemiGround, hemiIntensity, fillIntensity;
+  let background, exposure;
+  if (lightingPreset === "sunset") {
+    sunColor = 0xffa45f; sunIntensity = 2.25; sunPosition = [-35, 13, 18];
+    hemiSky = 0xffc69b; hemiGround = 0x49352e; hemiIntensity = 0.85;
+    fillIntensity = 0.28; background = 0x9c7467; exposure = 1.15;
+  } else if (lightingPreset === "night") {
+    sunColor = 0x9bb8ff; sunIntensity = 0.28; sunPosition = [-12, 8, 18];
+    hemiSky = 0x526d9c; hemiGround = 0x101a20; hemiIntensity = 0.38;
+    fillIntensity = 0.9; background = 0x111b2b; exposure = 0.8;
   } else {
-    lights.sun.color.set(0xffe5bd); lights.sun.intensity = 3.2;
-    lights.sun.position.set(-28, 42, 22);
-    lights.hemi.color.set(0xc9e2ee); lights.hemi.groundColor.set(0x4c5144); lights.hemi.intensity = 1.35;
-    lights.fill.intensity = 0.55;
-    scene.background.set(0x9db7bd); scene.fog.color.set(0x9db7bd);
-    renderer.toneMappingExposure = 1.08;
+    sunColor = 0xffe5bd; sunIntensity = 3.2; sunPosition = [-28, 42, 22];
+    hemiSky = 0xc9e2ee; hemiGround = 0x4c5144; hemiIntensity = 1.35;
+    fillIntensity = 0.55; background = 0x9db7bd; exposure = 1.08;
   }
+  const rain = weatherPreset === "rain", dust = weatherPreset === "dust";
+  lights.sun.color.set(sunColor); lights.sun.intensity = sunIntensity; lights.sun.position.set(...sunPosition);
+  lights.hemi.color.set(hemiSky); lights.hemi.groundColor.set(hemiGround);
+  lights.hemi.intensity = hemiIntensity * (rain ? 0.78 : dust ? 0.92 : 1);
+  lights.fill.intensity = fillIntensity * (rain ? 1.15 : 1);
+  scene.background.set(background);
+  scene.fog.color.set(dust ? 0x9c927d : background);
+  scene.fog.near = rain ? 28 : dust ? 18 : 65;
+  scene.fog.far = rain ? 145 : dust ? 95 : 230;
+  renderer.toneMappingExposure = exposure;
+  lights.rain.visible = rain;
+  lights.dust.visible = dust;
+}
+
+function setLightingPreset(value) {
+  lightingPreset = value;
+  applyVisualPresets();
 }
 
 function setWeather(value) {
-  if (!lights) return;
-  lights.rain.visible = value === "rain";
-  lights.dust.visible = value === "dust";
-  if (value === "rain") {
-    scene.fog.near = 28;
-    scene.fog.far = 145;
-    lights.hemi.intensity = 0.78;
-    lights.fill.intensity = 0.75;
-  } else if (value === "dust") {
-    scene.fog.near = 18;
-    scene.fog.far = 95;
-    scene.fog.color.set(0x9c927d);
-    lights.hemi.intensity = 1.05;
-  } else {
-    scene.fog.near = 65;
-    scene.fog.far = 230;
-    scene.fog.color.copy(scene.background);
-    lights.hemi.intensity = 1.35;
-  }
+  weatherPreset = value;
+  applyVisualPresets();
 }
 
 function showError(error) {
