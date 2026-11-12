@@ -95,6 +95,14 @@ async function verifyViewport(name, options = {}) {
   }, gltfDataUrl);
   if (loadedAsset.count !== 1 || !loadedAsset.boundsReady) failures.push(name + ": glTF fixture failed: " + (loadedAsset.error || "geometry bounds missing"));
 
+  const showcase = await page.evaluate(async () => {
+    const module = await import("./engine.js");
+    return module.getEngineDiagnostics();
+  });
+  if (!showcase?.showcaseReady || showcase.vehicleName !== "banglar-alef-cng" || showcase.vehicleMeshCount < 20) {
+    failures.push(name + ": detailed Banglar Alef CNG showcase did not initialize: " + JSON.stringify(showcase));
+  }
+
   const canvas = page.locator("#viewport canvas");
   if (!(await canvas.isVisible())) failures.push(name + ": WebGL canvas is not visible");
 
