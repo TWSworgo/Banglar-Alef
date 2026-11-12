@@ -117,7 +117,7 @@ const traffic=[];
 const colors=[0x245a85,0xc8a044,0x9b3c32,0x47765b,0xd6d0c4,0x6b536f];
 for(let i=0;i<38;i++){
  const car=makeCar(colors[i%colors.length]);let axis=Math.random()<.5?"x":"z",lane=Math.random()<.5?-2.3:2.3,dir=Math.random()<.5?-1:1,line=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP;
- car.position.set(axis==="x"?Math.random()*GRID*STEP-HALF:line,0,axis==="z"?Math.random()*GRID*STEP-HALF:line);
+ car.position.set(axis==="x"?Math.random()*GRID*STEP-HALF:line,0,axis==="z"?Math.random()*GRID*STEP-HALF:line);if(Math.hypot(car.position.x,car.position.z)<24)car.position[axis==="x"?"x":"z"]+=dir*28;
  car.rotation.y=axis==="x"?(dir>0?Math.PI/2:-Math.PI/2):(dir>0?0:Math.PI);
  scene.add(car);traffic.push({mesh:car,axis,lane,dir,line,speed:4+Math.random()*7,base:4+Math.random()*8});
 }
