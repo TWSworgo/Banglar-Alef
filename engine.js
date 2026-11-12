@@ -1,3 +1,5 @@
+import { CollisionWorld, OcclusionCuller, ResourceTracker, estimateTextureMemoryBytes } from './engine-systems.js';
+
 let THREE, OrbitControls, RoomEnvironment, clock;
 
 const $ = id => document.getElementById(id);
@@ -8,7 +10,10 @@ const errorMessage = $("scene-error-message");
 let renderer, scene, camera, controls, resizeObserver, animationFrame, environmentMap;
 let lastFrame = performance.now(), fpsFrames = 0, fpsStart = lastFrame;
 let adaptiveScale = 1, qualityTier = "AUTO";
-let disposed = false;
+let disposed = false, frameNumber = 0, lightingPreset = 'day', weatherPreset = 'clear';
+let occlusionCuller, collisionWorld, resourceTracker;
+let occlusionTargets = [], occlusionSources = [];
+let collisionPairCount = 0;
 
 const lodObjects = [];
 
@@ -38,7 +43,9 @@ function makeAsphaltMaps() {
   map.colorSpace = THREE.SRGBColorSpace;
   map.wrapS = map.wrapT = THREE.RepeatWrapping;
   map.repeat.set(3, 3);
-  map.anisotropy = 4;
+  map.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  map.minFilter = THREE.LinearMipmapLinearFilter;
+  map.magFilter = THREE.LinearFilter;
   const roughCanvas = document.createElement("canvas");
   roughCanvas.width = roughCanvas.height = size;
   const roughCtx = roughCanvas.getContext("2d");
@@ -84,7 +91,9 @@ function makeAsphaltMaps() {
   const normalMap = new THREE.CanvasTexture(normalCanvas);
   normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
   normalMap.repeat.set(3, 3);
-  normalMap.anisotropy = 4;
+  normalMap.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  normalMap.minFilter = THREE.LinearMipmapLinearFilter;
+  normalMap.magFilter = THREE.LinearFilter;
   return { map, roughnessMap, normalMap };
 }
 
@@ -107,12 +116,14 @@ function addGround(materials) {
   ground.rotation.x = -Math.PI / 2;
   ground.position.y = -0.12;
   ground.receiveShadow = true;
+  ground.userData.collider = true;
   scene.add(ground);
 
   const road = new THREE.Mesh(new THREE.PlaneGeometry(26, 170), materials.asphalt);
   road.rotation.x = -Math.PI / 2;
   road.position.y = -0.04;
   road.receiveShadow = true;
+  road.userData.collider = true;
   scene.add(road);
 
   const sidewalkMaterial = materials.concrete;
@@ -121,6 +132,7 @@ function addGround(materials) {
     walk.position.set(x, 0.02, 0);
     walk.receiveShadow = true;
     walk.castShadow = true;
+    walk.userData.collider = true;
     scene.add(walk);
   }
   const lineMaterial = new THREE.MeshStandardMaterial({ color: 0xe5dfbb, roughness: 0.75 });
@@ -138,6 +150,8 @@ function addMaterialStudy(materials) {
   floor.position.set(0, 0.22, -9);
   floor.castShadow = true;
   floor.receiveShadow = true;
+  floor.userData.collider = true;
+  floor.userData.occluder = true;
   base.add(floor);
 
   const samples = [
@@ -151,11 +165,14 @@ function addMaterialStudy(materials) {
     plinth.position.set(sample.x, 0.72, -9);
     plinth.castShadow = true;
     plinth.receiveShadow = true;
+    plinth.userData.collider = true;
+    plinth.userData.occluder = true;
     base.add(plinth);
     const sphere = new THREE.Mesh(new THREE.SphereGeometry(0.95, 64, 48), sample.material);
     sphere.position.set(sample.x, 2.12, -9);
     sphere.castShadow = true;
     sphere.receiveShadow = true;
+    sphere.userData.occludee = true;
     base.add(sphere);
     const label = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.12, 0.22), new THREE.MeshStandardMaterial({ color: 0x263a2b, roughness: 0.7 }));
     label.position.set(sample.x, 1.02, -7.35);
@@ -167,10 +184,12 @@ function addMaterialStudy(materials) {
   const chrome = new THREE.Mesh(new THREE.TorusKnotGeometry(0.72, 0.22, 160, 24), materials.calibration);
   chrome.position.set(-9, 2.1, -17);
   chrome.castShadow = true;
+  chrome.userData.occludee = true;
   detail.add(chrome);
   const glassSphere = new THREE.Mesh(new THREE.SphereGeometry(0.8, 48, 32), materials.glass);
   glassSphere.position.set(9, 2.1, -17);
   glassSphere.castShadow = true;
+  glassSphere.userData.occludee = true;
   detail.add(glassSphere);
   scene.add(detail);
 }
@@ -237,6 +256,7 @@ function addCalibrationObjects(materials) {
   ring.rotation.x = Math.PI / 2;
   high.add(ring);
   high.position.set(-24, 1.2, -15);
+  high.userData.occludee = true;
   scene.add(high);
 
   const low = new THREE.Group();
@@ -325,6 +345,23 @@ function configureRenderer() {
   scene.environment = environmentMap;
   pmrem.dispose();
   environment.dispose();
+  resourceTracker = new ResourceTracker();
+  resourceTracker.trackScene(scene);
+  resourceTracker.track(environmentMap);
+  occlusionCuller = new OcclusionCuller(THREE, camera, { intervalFrames: 6, maxRaysPerFrame: 42 });
+  scene.traverse(object => {
+    if (object.userData.occluder) occlusionSources.push(object);
+    if (object.userData.occludee) occlusionTargets.push(object);
+    if (object.userData.collider && object.isMesh) {
+      object.geometry.computeBoundingBox();
+      const bounds = new THREE.Box3().setFromObject(object);
+      if (!collisionWorld) collisionWorld = new CollisionWorld({ cellSize: 12 });
+      collisionWorld.add(object.uuid, { min: bounds.min, max: bounds.max }, object);
+    }
+  });
+  occlusionCuller.setOccluders(occlusionSources);
+  for (const object of occlusionTargets) occlusionCuller.register(object);
+  collisionPairCount = collisionWorld ? collisionWorld.getPotentialPairs().length : 0;
   resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(viewport);
   updateQualityLabel();
