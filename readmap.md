@@ -57,22 +57,23 @@
 
 - Graphics Engine Lab: `engine.html`, `engine.css`, `engine.js`।
 - Three.js WebGL 2 renderer, ACES tone mapping, PCF soft shadows এবং PMREM environment lighting।
-- Procedural 1024px/512px device-tier asphalt color, roughness ও tangent-space normal maps; metal, glass, painted ও concrete PBR materials।
-- Day / sunset / night lighting এবং clear / rain / dust weather-কে independent state হিসেবে compose করা হয়েছে; একটির পরিবর্তনে অন্যটির lighting override হয় না।
+- Procedural 1024px/512px device-tier asphalt color, roughness ও tangent-space normal maps; painted, glass, metal, rubber ও concrete PBR materials।
+- Day / sunset / night lighting এবং clear / rain / dust weather independent state হিসেবে compose হয়।
 - Dynamic water surface, rain ও dust particle systems; OrbitControls, responsive resize এবং distance-based LOD।
-- Three.js frustum culling-এর পাশাপাশি tagged opaque occluder-এর জন্য bounded CPU raycast occlusion culler; per-frame ray budget আছে।
-- Reusable `engine-systems.js`: SpatialHash3D broadphase, exact AABB overlap filtering, CollisionWorld collider registry, OcclusionCuller এবং ResourceTracker।
-- Engine scene-এর static ground/road/sidewalk/plinth colliders CollisionWorld-এ নিবন্ধিত; current scene-এ broadphase pair telemetry দেখা যায়।
+- **নতুন Dhaka CNG showcase:** `engine-showcase.js`-এ procedural three-wheel CNG model—body panels, canopy, cabin glazing, seats, wheels/hubs, grille, headlamps, mirrors, trim, battery enclosure ও rear “বাংলার আলেফ” plate।
+- Showcase environment-এ procedural Dhaka-style roadside building facades, trees ও streetlights আছে। এগুলো Engine Lab-এর representative scene; বাস্তব ঢাকার সম্পূর্ণ 3D map বা final game world নয়।
+- Static vehicle/environment geometry material অনুযায়ী merge এবং road markings instanced করা হয়েছে; ফলে CI mobile viewport-এ draw calls 130 থেকে 43-এ নেমেছে।
+- glTF 2.0 asset pipeline-এ GLTFLoader, DRACO ও KTX2 loader shared Three.js import map দিয়ে resolve হয়; CI fixture load, geometry bounds এবং resource release পরীক্ষা করে।
+- Reusable `engine-systems.js`: SpatialHash3D broadphase, exact AABB overlap filtering, CollisionWorld collider registry, OcclusionCuller ও ResourceTracker।
+- Engine Lab-এর ground/road/sidewalk এবং CNG body collider CollisionWorld-এ নিবন্ধিত; এটি gameplay collision response নয়।
 - Hardware-aware rendering budget: device memory ও mobile viewport অনুসারে pixel ratio, shadow-map size, texture resolution, anisotropy এবং antialiasing নির্বাচন।
-- GPU texture memory-এর আনুমানিক হিসাব, FPS/frame-time/draw-call/triangle, occlusion ও collision-pair telemetry।
-- Shared geometry/material/texture একবার dispose করার ResourceTracker; tab hidden হলে render loop pause এবং visible হলে resume।
-- WebGL failure/context loss message ও renderer retry flow।
-- Node unit tests: spatial hash query/update/remove, duplicate-free collision pairs, resource disposal এবং texture-memory estimates — **৬টি test passed**।
-- Playwright Chromium acceptance: desktop ও mobile viewport-এ WebGL 2 initialization, visible canvas, positive draw calls/triangles, lighting/weather preset composition, camera reset, GPU texture estimate ও collision registration — **passed**। আলাদা geometry test-এ opaque wall-এর পেছনে থাকা sphere occlusion culler দ্বারা বাদ পড়েছে — **passed**।
-- GitHub Actions run `43214089435`: source validation, ৬টি subsystem unit test এবং desktop/mobile Chromium browser acceptance — **সব job passed**।
-- CI-এর SwiftShader/virtual viewport ফল real Android/Desktop GPU benchmark নয়; displayed GPU texture memory estimate-ও full driver VRAM measurement নয়।
+- FPS/frame-time/draw-call/triangle, আনুমানিক texture memory, occlusion ও collision-pair telemetry।
+- Shared geometry/material/texture disposal; tab hidden হলে render loop pause; WebGL failure/context-loss message ও retry flow।
+- Node subsystem unit tests এবং Playwright Chromium desktop/mobile-viewport WebGL acceptance — **passed**।
+- GitHub Actions run `43220176901`: source validation এবং desktop/mobile browser acceptance — **সব job passed**। CI mobile viewport-এ 43 draw calls, 7,560 triangles ও 25 FPS দেখা গেছে; এটি SwiftShader software-rendering result, বাস্তব Android GPU benchmark নয়।
+- আগের Android test-এ পুরোনো material-study scene-এ WebGL 2 ও camera/weather controls কাজ করেছে। নতুন CNG showcase-এর sustained FPS, thermal ও battery behavior বাস্তব Android device-এ এখনো যাচাই করা হয়নি।
 
-**Feature 02-তে এখনও যেসব কাজ অন্য বাস্তব scope-এর সঙ্গে যুক্ত:** সম্পূর্ণ গেমের real-world GLTF/texture asset library ও streaming (Feature 03/04-এর actual assets আসার পর), dynamic gameplay collision response (Feature 11), এবং বাস্তব Android/Desktop hardware-এর sustained FPS, thermal ও battery acceptance। এগুলোকে এই Engine Lab-এর static checks দিয়ে সম্পন্ন বলে দাবি করা হচ্ছে না।
+**Feature 02-এর পূর্ণ completion-এর আগে বাকি scope:** final gameplay-এর জন্য production-quality GLTF/texture asset library ও streaming, gameplay collision response (Feature 11), এবং বাস্তব Android/Desktop hardware-এ sustained FPS, thermal ও battery acceptance। এই Engine Lab-কে final game world বা photorealistic asset library বলা হচ্ছে না।
 ## ৩. বাস্তব ঢাকা শহর — Open World
 
 - [ ] OpenStreetMap ভিত্তিক বাস্তব Road Network।
