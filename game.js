@@ -71,6 +71,8 @@ function init(){
   vehicle.rotation.y=gameState.player.heading;
   addTraffic();
   addPassenger();
+  if(journeyStage===1){$("mission-label").textContent="যাত্রী পাওয়া গেছে";$("mission-text").textContent="সামনের সবুজ মার্কারের কাছে গাড়ি থামাও";}
+  if(journeyStage===2){$("mission-label").textContent="যাত্রা সম্পন্ন";$("mission-text").textContent="আগের যাত্রা সম্পন্ন হয়েছে — নতুন যাত্রা শুরু করো";}
   clock=new THREE.Clock();
   addEvents();
   window.__gameDiagnostics = { get vehicleZ(){return vehicle.position.z;}, get speed(){return speed;}, get battery(){return battery;}, get journeyStage(){return journeyStage;} };
