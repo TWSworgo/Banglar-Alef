@@ -48,7 +48,7 @@ export function projectCoordinates(lat, lon, originLat, originLon) {
   const metresPerDegree = 111320;
   const x = (lon - originLon) * metresPerDegree * Math.cos(originLat * Math.PI / 180);
   const z = -(lat - originLat) * metresPerDegree;
-  return { x, z };
+  return { x: x === 0 ? 0 : x, z: z === 0 ? 0 : z };
 }
 
 export function getRoadWidth(tags = {}) {
