@@ -363,6 +363,41 @@ function animate(now) {
   const delta = Math.min(clock.getDelta(), 0.05);
   controls.update();
   updateLod();
+
+  const water = lights.water;
+  const waterAttribute = water.geometry.attributes.position;
+  const base = water.userData.basePositions;
+  const elapsed = clock.elapsedTime;
+  for (let i = 0; i < waterAttribute.count; i++) {
+    const x = base[i * 3], z = base[i * 3 + 2];
+    waterAttribute.array[i * 3 + 1] = base[i * 3 + 1] + Math.sin(x * 0.7 + elapsed * 1.4) * 0.025 + Math.cos(z * 0.55 + elapsed) * 0.02;
+  }
+  waterAttribute.needsUpdate = true;
+  water.geometry.computeVertexNormals();
+
+  const dustAttribute = lights.dust.geometry.attributes.position;
+  const speeds = lights.dust.userData.speeds;
+  for (let i = 0; i < dustAttribute.count; i++) {
+    const y = i * 3 + 1;
+    dustAttribute.array[y] -= speeds[i] * delta * 0.22;
+    if (dustAttribute.array[y] < 0.2) dustAttribute.array[y] = 18 + Math.random() * 4;
+  }
+  dustAttribute.needsUpdate = true;
+
+  if (lights.rain.visible) {
+    const rainAttribute = lights.rain.geometry.attributes.position;
+    for (let i = 0; i < rainAttribute.count; i++) {
+      const y = i * 3 + 1;
+      rainAttribute.array[y] -= 16 * delta;
+      if (rainAttribute.array[y] < 0) {
+        rainAttribute.array[y] = 25 + Math.random() * 8;
+        rainAttribute.array[i * 3] = (Math.random() - 0.5) * 75;
+        rainAttribute.array[i * 3 + 2] = (Math.random() - 0.5) * 100;
+      }
+    }
+    rainAttribute.needsUpdate = true;
+  }
+
   renderer.render(scene, camera);
   updateTelemetry(now);
   adaptQuality(delta * 1000);
@@ -391,6 +426,27 @@ function setLightingPreset(value) {
     lights.fill.intensity = 0.55;
     scene.background.set(0x9db7bd); scene.fog.color.set(0x9db7bd);
     renderer.toneMappingExposure = 1.08;
+  }
+}
+
+function setWeather(value) {
+  if (!lights) return;
+  lights.rain.visible = value === "rain";
+  if (value === "rain") {
+    scene.fog.near = 28;
+    scene.fog.far = 145;
+    lights.hemi.intensity = 0.78;
+    lights.fill.intensity = 0.75;
+  } else if (value === "dust") {
+    scene.fog.near = 18;
+    scene.fog.far = 95;
+    scene.fog.color.set(0x9c927d);
+    lights.hemi.intensity = 1.05;
+  } else {
+    scene.fog.near = 65;
+    scene.fog.far = 230;
+    scene.fog.color.copy(scene.background);
+    lights.hemi.intensity = 1.35;
   }
 }
 
@@ -438,6 +494,7 @@ async function start() {
     RoomEnvironment = environmentModule.RoomEnvironment;
     clock = new THREE.Clock();
     configureRenderer();
+    setWeather($("weather-mode").value);
     animationFrame = requestAnimationFrame(animate);
   } catch (error) {
     showError(error);
@@ -445,6 +502,7 @@ async function start() {
 }
 
 $("time-of-day").addEventListener("change", event => setLightingPreset(event.target.value));
+$("weather-mode").addEventListener("change", event => setWeather(event.target.value));
 $("reset-camera").addEventListener("click", () => {
   if (!camera || !controls) return;
   camera.position.set(25, 18, 32);
