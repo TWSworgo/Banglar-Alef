@@ -134,7 +134,7 @@ function buildRouteToObjective(){
  while(cursor){const [x,z]=cursor.split(",").map(Number);reversed.push({x:x*STEP,z:z*STEP});cursor=previous.get(cursor)}
  routePath=reversed.reverse();
  const distance=Math.max(0,routePath.length-1)*STEP+Math.hypot(player.position.x-sx*STEP,player.position.z-sz*STEP);
- ui.sub.textContent+=" · রুট "+Math.round(distance)+" মিটার";
+ ui.sub.textContent=ui.sub.textContent.split(" · রুট")[0]+" · রুট "+Math.round(distance)+" মিটার";
 }
 
 const state={running:false,paused:false,speed:0,yaw:0,battery:100,money:250,wanted:0,mission:0,passenger:false,time:8.5,toastTimer:0,trafficClock:0};
@@ -198,8 +198,9 @@ function updateTraffic(dt){
 }
 function updatePeople(dt){for(const p of people){const m=p.mesh;m.position[p.axis==="x"?"x":"z"]+=p.dir*p.speed*dt;if(Math.abs(m.position[p.axis==="x"?"x":"z"])>HALF+10)m.position[p.axis==="x"?"x":"z"]=-p.dir*(HALF+8);const near=Math.hypot(m.position.x-player.position.x,m.position.z-player.position.z);if(near<4)m.position[p.axis==="x"?"x":"z"]-=p.dir*p.speed*dt*1.5;}}
 function updateMissions(dt){
+ state.routeTimer=(state.routeTimer||0)+dt;if(state.routeTimer>2){state.routeTimer=0;buildRouteToObjective()}
  for(const p of pickups){if(!p.active)continue;p.mesh.rotation.z+=dt*.7;p.mesh.position.y=.35+Math.sin(performance.now()*.002)*.15;const d=Math.hypot(player.position.x-p.x,player.position.z-p.z);if(d<4&&Math.abs(state.speed)<3){p.active=false;p.mesh.visible=false;state.passenger=true;state.mission=1;const a=Math.floor(Math.random()*GRID*2-GRID),b=Math.floor(Math.random()*GRID*2-GRID);destination.position.set(a*STEP,.3,b*STEP);toast("যাত্রী উঠেছেন। গন্তব্যে যান।");setMission();break}}
- if(state.mission===1){destination.rotation.z+=dt*.5;const d=Math.hypot(player.position.x-destination.position.x,player.position.z-destination.position.z);if(d<5&&Math.abs(state.speed)<3){state.passenger=false;state.mission=2;state.money+=80+Math.round(Math.random()*80);toast("যাত্রা সম্পন্ন! ভাড়া যোগ হয়েছে।");setMission();const p=pickups.find(x=>!x.active);if(p){p.active=true;p.mesh.visible=true}setMission()}}
+ if(state.mission===1){destination.rotation.z+=dt*.5;const d=Math.hypot(player.position.x-destination.position.x,player.position.z-destination.position.z);if(d<5&&Math.abs(state.speed)<3){state.passenger=false;state.mission=2;state.money+=80+Math.round(Math.random()*80);toast("যাত্রা সম্পন্ন! ভাড়া যোগ হয়েছে।");const p=pickups.find(x=>!x.active);if(p){p.active=true;p.mesh.visible=true}setMission()}}
 }
 function updateHud(){ui.speed.textContent=String(Math.round(Math.abs(state.speed)*3.6)).replace(/\d/g,d=>"০১২৩৪৫৬৭৮৯"[d]);ui.battery.textContent=Math.round(state.battery);ui.money.textContent=state.money;ui.wanted.textContent="● ".repeat(state.wanted)+"○ ".repeat(5-state.wanted)}
 function drawMap(){map.clearRect(0,0,180,180);map.fillStyle="#26352a";map.fillRect(0,0,180,180);map.strokeStyle="#b3aa8c";map.lineWidth=4;for(let i=-GRID;i<=GRID;i++){let p=90+i*STEP/(HALF*2)*180;map.beginPath();map.moveTo(p,0);map.lineTo(p,180);map.moveTo(0,p);map.lineTo(180,p);map.stroke()}if(routePath.length){map.strokeStyle="#ffd45a";map.lineWidth=2.5;map.setLineDash([5,4]);map.beginPath();routePath.forEach((p,i)=>{const x=90+p.x/(HALF*2)*180,z=90+p.z/(HALF*2)*180;if(i===0)map.moveTo(x,z);else map.lineTo(x,z)});map.stroke();map.setLineDash([])}
