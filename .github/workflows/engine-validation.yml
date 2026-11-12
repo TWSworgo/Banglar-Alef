@@ -10,7 +10,7 @@ on:
       - "engine-showcase.js"
       - ".github/scripts/engine-systems.test.mjs"
       - ".github/scripts/engine-assets.test.mjs"
-      - "engine.html"
+      - "game.js"\n      - "game.html"\n      - "game.css"\n      - ".github/scripts/game-browser-test.mjs"\n      - "engine.html"
       - "engine.css"
       - "city.html"
       - "city.css"
