@@ -128,7 +128,7 @@ for(let i=0;i<64;i++){
 }
 const chargers=[];
 for(let i=0;i<9;i++){
- const x=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP+7,z=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP+7;
+ const x=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP+4.6,z=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP;
  const pad=box(city,x,.13,z,4,.18,2.4,mat(0x277e56),false);
  const post=box(city,x+2.1,1,z,.3,2,.3,M.yellow,false);
  const lamp=new THREE.Mesh(new THREE.SphereGeometry(.22,10,8),new THREE.MeshStandardMaterial({color:0x75ff9a,emissive:0x1b8b43}));lamp.position.set(x+2.1,2.1,z);city.add(lamp);
@@ -227,7 +227,7 @@ function updateCrowd(dt){
  }
 }
 function updateHud(){
- const bn=n=>Math.round(n).toString().replace(/\\d/g,d=>"০১২৩৪৫৬৭৮৯"[d]);
+ const bn=n=>Math.round(n).toString().replace(/\d/g,d=>"০১২৩৪৫৬৭৮৯"[d]);
  ui.loss.textContent="৳"+bn(state.loss);ui.combo.textContent="×"+bn(state.combo)+" কম্বো";ui.combo.classList.toggle("hidden",state.combo<2);
  ui.battery.textContent=bn(state.battery)+"%";ui.batteryBar.style.width=state.battery+"%";ui.batteryBar.style.background=state.battery<20?"#f15d45":"#72e69a";
  ui.best.textContent="৳"+bn(state.best);ui.anger.textContent=bn(state.anger)+"%";ui.angerBar.style.width=state.anger+"%";
