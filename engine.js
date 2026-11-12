@@ -229,6 +229,11 @@ function configureRenderer() {
   });
   viewport.appendChild(renderer.domElement);
   lights = createScene();
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const environment = new RoomEnvironment();
+  scene.environment = pmrem.fromScene(environment, 0.04).texture;
+  pmrem.dispose();
+  environment.dispose();
   resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(viewport);
   updateQualityLabel();
