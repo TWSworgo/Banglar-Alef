@@ -1,5 +1,4 @@
-import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js";
-import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js";
+let THREE, OrbitControls;
 
 const $ = id => document.getElementById(id);
 const viewport = $("viewport");
@@ -224,6 +223,10 @@ function configureRenderer() {
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
   renderer.setSize(viewport.clientWidth, viewport.clientHeight, false);
   renderer.domElement.setAttribute("aria-label", "Interactive real-time 3D PBR material scene");
+  renderer.domElement.addEventListener("webglcontextlost", event => {
+    event.preventDefault();
+    showError(new Error("Graphics context হারিয়ে গেছে। Browser বা device-এর GPU memory চাপের কারণে এমন হতে পারে। আবার চেষ্টা করো।"));
+  });
   viewport.appendChild(renderer.domElement);
   lights = createScene();
   resizeObserver = new ResizeObserver(resize);
@@ -362,22 +365,28 @@ function disposeRenderer() {
   lodObjects.length = 0;
 }
 
-function start() {
+async function start() {
   try {
     errorPanel.hidden = true;
     disposed = false;
+    const threeModule = await import("https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js");
+    const controlsModule = await import("https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/controls/OrbitControls.js");
+    THREE = threeModule;
+    OrbitControls = controlsModule.OrbitControls;
     configureRenderer();
-    $("time-of-day").addEventListener("change", event => setLightingPreset(event.target.value));
-    $("reset-camera").addEventListener("click", () => {
-      camera.position.set(25, 18, 32);
-      controls.target.set(0, 1.2, -7);
-      controls.update();
-    });
     animationFrame = requestAnimationFrame(animate);
   } catch (error) {
     showError(error);
   }
 }
+
+$("time-of-day").addEventListener("change", event => setLightingPreset(event.target.value));
+$("reset-camera").addEventListener("click", () => {
+  if (!camera || !controls) return;
+  camera.position.set(25, 18, 32);
+  controls.target.set(0, 1.2, -7);
+  controls.update();
+});
 
 $("retry-renderer").addEventListener("click", () => {
   disposeRenderer();
