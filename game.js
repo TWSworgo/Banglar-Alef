@@ -163,13 +163,27 @@ for(let i=0;i<22;i++){
  const pot=new THREE.Mesh(new THREE.CylinderGeometry(.2,.24,.45,10),mat(0x6a4630));pot.position.set(x+.75,.34,z+.3);city.add(pot);
  stalls.push({x,z});
 }
-const pressureCrowd=[];
-for(let i=0;i<7;i++){const npc=makePerson(),a=i/7*Math.PI*2,r=96+Math.random()*18;npc.position.set(Math.cos(a)*r,0,Math.sin(a)*r);scene.add(npc);pressureCrowd.push({mesh:npc,speed:2.1+Math.random()*.5})}
-function updatePressureCrowd(dt){
- let nearest=Infinity;
- for(const c of pressureCrowd){const dx=player.position.x-c.mesh.position.x,dz=player.position.z-c.mesh.position.z,d=Math.hypot(dx,dz);nearest=Math.min(nearest,d);const a=Math.atan2(dx,dz);c.mesh.position.x+=Math.sin(a)*c.speed*dt;c.mesh.position.z+=Math.cos(a)*c.speed*dt;c.mesh.rotation.y=a}
- const target=clamp((36-nearest)*3.1,0,100);state.pressure=clamp(state.pressure+(target-state.pressure)*dt*.45,0,100);
- if(state.pressure>=99.5)endGame("ধরা পড়েছেন!","পিছু নেওয়া ভিড় আপনাকে ঘিরে ফেলেছে। আবার চেষ্টা করুন।");
+const pickups=[];
+for(let i=0;i<12;i++){
+ const x=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP,z=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP;
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(1.25,.15,8,24),mat(0x6dff91));ring.rotation.x=Math.PI/2;ring.position.set(x,.35,z);scene.add(ring);pickups.push({mesh:ring,x,z,active:true});
+}
+const destination=new THREE.Mesh(new THREE.TorusGeometry(1.8,.18,8,28),mat(0xffc82e));destination.rotation.x=Math.PI/2;destination.position.set(0,.35,0);destination.visible=false;scene.add(destination);
+function setMission(){ui.mission.textContent=state.passenger?"যাত্রীকে গন্তব্যে পৌঁছান":"যাত্রী খুঁজুন";ui.missionSub.textContent=state.passenger?"হলুদ চিহ্নে ধীরে থামুন":"সবুজ চিহ্নের কাছে ধীরে থামুন"}
+function updateMissions(dt){
+ for(const p of pickups){if(p.active){p.mesh.rotation.z+=dt*.55;p.mesh.position.y=.35+Math.sin(performance.now()*.002)*.12;
+  if(!state.passenger&&Math.hypot(player.position.x-p.x,player.position.z-p.z)<3.8&&Math.abs(state.speed)<2.5){
+   p.active=false;p.mesh.visible=false;state.passenger=true;
+   let x,z;do{x=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP;z=(Math.floor(Math.random()*(GRID*2+1))-GRID)*STEP}while(Math.hypot(x-player.position.x,z-player.position.z)<80);
+   destination.position.set(x,.35,z);destination.visible=true;toast("যাত্রী উঠেছেন। নিরাপদে গন্তব্যে পৌঁছে দিন।");setMission();break;
+  }
+ }}
+ if(state.passenger&&Math.hypot(player.position.x-destination.position.x,player.position.z-destination.position.z)<4.2&&Math.abs(state.speed)<2.5){
+  state.passenger=false;destination.visible=false;state.score+=100;state.streak=Math.min(10,state.streak+1);
+  if(state.score>state.best){state.best=state.score;try{localStorage.setItem("ba_best",String(state.best))}catch{}}
+  const p=pickups.find(x=>!x.active);if(p){p.active=true;p.mesh.visible=true}
+  toast("যাত্রী নিরাপদে পৌঁছেছেন! +৳১০০");setMission();
+ }
 }
 const chargers=[];
 for(let i=0;i<9;i++){
@@ -179,7 +193,7 @@ for(let i=0;i<9;i++){
 }
 const chasers=[];let cameraMode=0;
 const cameraOffsets=[new THREE.Vector3(0,6.2,-10),new THREE.Vector3(0,2.7,-3.8),new THREE.Vector3(0,12,-17)];
-const state={running:false,paused:false,over:false,speed:0,yaw:0,battery:100,score:0,best:Number(localStorage.getItem("ba_best")||0),accidents:0,streak:1,crashes:0,pressure:0,time:8.5,toastTimer:0,trafficClock:0,hornCooldown:0,collisionCooldown:0,chargeTimer:0,signalStopKey:"",muted:false,quality:localStorage.getItem("ba_quality")||"medium"};
+const state={running:false,paused:false,over:false,speed:0,yaw:0,battery:100,score:0,best:Number(localStorage.getItem("ba_best")||0),accidents:0,streak:1,crashes:0,mission:0,passenger:false,time:8.5,toastTimer:0,trafficClock:0,hornCooldown:0,collisionCooldown:0,chargeTimer:0,signalStopKey:"",muted:false,quality:localStorage.getItem("ba_quality")||"medium"};
 const keys={},controls={left:false,right:false,throttle:false,brake:false};
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function toast(message){ui.toast.textContent=message;ui.toast.classList.add("show");state.toastTimer=2.3}
@@ -220,8 +234,8 @@ function endGame(title,reason){
 }
 function impact(kind){
  if(state.collisionCooldown>0)return;state.collisionCooldown=.8;state.crashes++;state.accidents++;state.streak=1;
- state.score+=kind==="pedestrian"?500:250;state.battery=Math.max(0,state.battery-5);state.speed*=kind==="pedestrian"?.12:.3;state.pressure=Math.min(100,state.pressure+18);
- tone(95,.16,"triangle",.06);toast("জাতীয় ক্ষতি +৳"+(kind==="pedestrian"?"৫০০":"২৫০"));
+ state.score=Math.max(0,state.score-35);state.battery=Math.max(0,state.battery-5);state.speed*=kind==="pedestrian"?.12:.3;
+ tone(95,.16,"triangle",.06);toast((kind==="pedestrian"?"পথচারীর সঙ্গে দুর্ঘটনা। ":"যানবাহনে ধাক্কা। ")+"স্কোর −৩৫");
  if(state.accidents>=5)endGame("যাত্রা বাতিল","একাধিক দুর্ঘটনার কারণে এই যাত্রা শেষ হয়েছে।");
 }
 function updatePlayer(dt){
@@ -271,18 +285,21 @@ function updateHud(){
  ui.score.textContent="৳"+bn(state.score);ui.speed.textContent=bn(Math.abs(state.speed)*3.6)+" km/h";ui.combo.textContent="পরপর সফল যাত্রা ×"+bn(state.streak);ui.combo.classList.toggle("hidden",state.streak<2);
  ui.battery.textContent=bn(state.battery)+"%";ui.batteryBar.style.width=state.battery+"%";ui.batteryBar.style.background=state.battery<20?"#f15d45":"#72e69a";
  ui.best.textContent="৳"+bn(state.best);ui.accidents.textContent=bn(state.accidents);ui.accidentBar.style.width=(state.accidents/5*100)+"%";
- ui.hint.textContent=state.battery<20?"চার্জ কম! মানচিত্রে সবুজ চার্জিং পয়েন্ট খুঁজুন।":"ভিড়ের চাপ এড়িয়ে চলুন; চার্জিং পয়েন্ট ব্যবহার করুন।";ui.mission.textContent="জাতীয় ক্ষতি";ui.missionSub.textContent="দুর্ঘটনার পরিমাণ";const pressure=$("pressure"),pressureBar=$("pressureBar");if(pressure)pressure.textContent=bn(state.pressure)+"%";if(pressureBar)pressureBar.style.width=state.pressure+"%";
+ ui.hint.textContent=state.battery<20?"চার্জ কম! মানচিত্রে সবুজ চার্জিং পয়েন্ট খুঁজুন।":state.passenger?"যাত্রীকে নিরাপদে হলুদ গন্তব্যে পৌঁছে দিন।":"সবুজ চিহ্নে ধীরে থামিয়ে যাত্রী তুলুন।";
+ ui.mission.textContent=state.passenger?"যাত্রীকে গন্তব্যে পৌঁছান":"যাত্রী খুঁজুন";ui.missionSub.textContent=state.passenger?"হলুদ চিহ্নে যান এবং ধীরে থামুন":"সবুজ চিহ্নের কাছে অটো থামান";
 }
 function drawMap(){
  map.clearRect(0,0,180,180);map.fillStyle="#26352a";map.fillRect(0,0,180,180);map.strokeStyle="#b3aa8c";map.lineWidth=4;
  for(let i=-GRID;i<=GRID;i++){const p=90+i*STEP/(HALF*2)*180;map.beginPath();map.moveTo(p,0);map.lineTo(p,180);map.moveTo(0,p);map.lineTo(180,p);map.stroke()}
  map.fillStyle="#73f5a0";for(const c of chargers){map.beginPath();map.arc(90+c.x/(HALF*2)*180,90+c.z/(HALF*2)*180,2.5,0,Math.PI*2);map.fill()}
- map.fillStyle="#ef6657";for(const c of pressureCrowd){map.beginPath();map.arc(90+c.mesh.position.x/(HALF*2)*180,90+c.mesh.position.z/(HALF*2)*180,2.6,0,Math.PI*2);map.fill()}
+ map.fillStyle="#7bff9c";for(const p of pickups){if(p.active){map.beginPath();map.arc(90+p.x/(HALF*2)*180,90+p.z/(HALF*2)*180,3,0,Math.PI*2);map.fill()}}
+ if(state.passenger){map.fillStyle="#ffd45a";map.beginPath();map.arc(90+destination.position.x/(HALF*2)*180,90+destination.position.z/(HALF*2)*180,4,0,Math.PI*2);map.fill()}
  const px=90+player.position.x/(HALF*2)*180,pz=90+player.position.z/(HALF*2)*180;map.fillStyle="#ffca35";map.beginPath();map.arc(px,pz,4,0,Math.PI*2);map.fill();
 }
 function reset(){
- player.position.set(0,0,0);state.speed=0;state.yaw=0;player.rotation.y=0;state.battery=100;state.score=0;state.accidents=0;state.streak=1;state.crashes=0;state.pressure=0;state.time=8.5;state.signalStopKey="";state.over=false;state.chargeTimer=0;state.collisionCooldown=0;
- chargers.forEach(c=>c.cooldown=0);pressureCrowd.forEach((c,i)=>{const a=i/pressureCrowd.length*Math.PI*2;c.mesh.position.set(Math.cos(a)*105,0,Math.sin(a)*105)});ui.endPanel.classList.add("hidden");ui.pausePanel.classList.add("hidden");updateHud();drawMap();
+ player.position.set(0,0,0);state.speed=0;state.yaw=0;player.rotation.y=0;state.battery=100;state.score=0;state.accidents=0;state.streak=1;state.crashes=0;state.mission=0;state.passenger=false;state.time=8.5;state.signalStopKey="";state.over=false;state.chargeTimer=0;state.collisionCooldown=0;
+ chargers.forEach(c=>c.cooldown=0);pickups.forEach(p=>{p.active=true;p.mesh.visible=true});
+ destination.visible=false;ui.endPanel.classList.add("hidden");ui.pausePanel.classList.add("hidden");updateHud();drawMap();
 }
 function start(){reset();state.running=true;state.paused=false;ui.overlay.classList.add("hidden");toast("ঢাকার রাস্তায় নেমে পড়ুন!")}
 function togglePause(){if(!state.running||state.over)return;state.paused=!state.paused;ui.pausePanel.classList.toggle("hidden",!state.paused)}
@@ -296,7 +313,7 @@ let last=performance.now(),frame=0;
 function loop(now){
  requestAnimationFrame(loop);const dt=Math.min(.04,(now-last)/1000||0);last=now;
  if(state.running&&!state.paused&&!state.over){
-  updatePlayer(dt);updateTraffic(dt);updatePeople(dt);updatePressureCrowd(dt);state.time=(state.time+dt*.025)%24;updateLighting();
+  updatePlayer(dt);updateTraffic(dt);updatePeople(dt);updateMissions(dt);state.time=(state.time+dt*.025)%24;updateLighting();
   const two=n=>Math.floor(n).toString().padStart(2,"0");ui.clock.textContent=two(Math.floor(state.time))+":"+two(Math.floor((state.time%1)*60));
   if(state.toastTimer>0){state.toastTimer-=dt;if(state.toastTimer<=0)ui.toast.classList.remove("show")}
   updateHud();if(++frame%7===0)drawMap();
@@ -305,4 +322,10 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 addEventListener("resize",()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,1.5))});
-camera.position.set(0,8,-12);camera.lookAt(0,1,5);drawMap();updateHud();window.__GAME_STATE__=state;window.__GAME_READY__=true;
+camera.position.set(0,8,-12);camera.lookAt(0,1,5);setMission();drawMap();updateHud();window.__GAME_STATE__=state;window.__GAME_READY__=true;if(new URLSearchParams(location.search).has("test")){
+ window.__GAME_TEST__={
+  pickup(){const p=pickups.find(x=>x.active);if(!p)return false;player.position.set(p.x,0,p.z);state.speed=0;updateMissions(.016);return state.passenger},
+  dropoff(){if(!state.passenger)return false;player.position.set(destination.position.x,0,destination.position.z);state.speed=0;updateMissions(.016);return !state.passenger&&state.score>=100}
+ };
+}
+
